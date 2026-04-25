@@ -248,14 +248,14 @@ html, body {
   line-height: 1;
   color: #ffffff;
 }
-.topbar-logo span { color: var(--orange-mid); }
+.topbar-logo span { color: #fff; }
 .topbar-day {
   font-family: var(--font-display);
   font-size: 14px;
-  color: #fff;
+  color: var(--orange);
   background: transparent;
   padding: 3px 10px;
-  border: 1px solid rgba(255,255,255,0.8);
+  border: 1px solid var(--orange);
   letter-spacing: .1em;
 }
 .topbar-spacer { flex: 1; }
@@ -305,8 +305,8 @@ html, body {
   font-size: 14px;
   letter-spacing: .1em;
   padding: 4px 10px;
-  border: 1px solid rgba(255,255,255,0.2);
-  color: rgba(255,255,255,0.8);
+  border: 1px solid #fff;
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -968,11 +968,13 @@ html, body {
 
   /* ── TOPBAR ── */
   .topbar { padding: 0 10px; gap: 8px; height: 48px; }
-  .topbar-day { display: flex; align-items: center; font-size: 12px; padding: 2px 7px; letter-spacing: .06em; order: 1; }
-  .live-badge { order: 2; font-size: 9px; }
+  .menu-toggle { width: 44px; height: 44px; font-size: 24px; }
+  .topbar-day { display: flex; align-items: center; font-size: 12px; padding: 2px 7px; letter-spacing: .06em; color: var(--orange); border-color: var(--orange); order: 1; }
+  .role-badge { order: 2; font-size: 12px; padding: 4px 7px; min-width: 0; }
+  .switch-role-btn { order: 3; }
+  .live-badge { order: 4; display: none; }
   .presence-avatars { display: none; }
   #fbStatus { display: none !important; }
-  .role-badge { font-size: 12px; padding: 4px 7px; min-width: 0; }
   .switch-role-btn { font-size: 12px !important; padding: 4px 7px !important; letter-spacing: .02em !important; }
   .topbar-logo { font-size: 17px; letter-spacing: 2px; }
 
@@ -1187,13 +1189,13 @@ html, body {
   </div>
   <div class="topbar">
     <button class="menu-toggle" onclick="window.toggleSidebar()" aria-label="Menu">☰</button>
-    <span class="topbar-logo">WCHS <span style="color:var(--orange-mid)">FOOTBALL</span></span>
+    <span class="topbar-logo">WCHS <span>FOOTBALL</span></span>
     <span class="topbar-day" id="topbarDay">MONDAY</span>
     <span class="topbar-spacer"></span>
     <div class="live-badge"><div class="live-dot"></div>LIVE SYNC</div>
     <div class="presence-avatars" id="presenceAvatars"></div>
     <span class="role-badge" id="roleBadge"></span>
-    <button class="switch-role-btn" onclick="window.doLogout()" style="padding:4px 10px;background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.45);font-family:var(--font-display);font-size:14px;letter-spacing:.06em;cursor:pointer;transition:all .12s;white-space:nowrap;" onmouseover="this.style.color='#fff';this.style.borderColor='rgba(255,255,255,0.5)'" onmouseout="this.style.color='rgba(255,255,255,0.45)';this.style.borderColor='rgba(255,255,255,0.2)'">SWITCH ROLE</button>
+    <button class="switch-role-btn" onclick="window.doLogout()" style="padding:4px 10px;background:transparent;border:1px solid #fff;color:#fff;font-family:var(--font-display);font-size:14px;letter-spacing:.06em;cursor:pointer;transition:all .12s;white-space:nowrap;" onmouseover="this.style.borderColor='var(--orange)'" onmouseout="this.style.borderColor='#fff'">SWITCH ROLE</button>
   </div>
   <div class="main">
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="window.toggleSidebar()"></div>
@@ -1547,9 +1549,7 @@ function doLogin(){
   const badge=document.getElementById('roleBadge');
   badge.textContent=r.label;
   badge.style.color='#ffffff';
-  badge.style.borderColor='rgba(255,255,255,0.25)';
-  badge.style.borderLeftColor=r.color;
-  badge.style.borderLeftWidth='3px';
+  badge.style.border='1px solid #fff';
 
   // ── Firebase: announce presence ──────────────────────────────────────────
   fbPresence(r.id, r.label, r.color);
