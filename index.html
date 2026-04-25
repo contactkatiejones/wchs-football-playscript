@@ -969,7 +969,7 @@ html, body {
   /* ── TOPBAR ── */
   .topbar { padding: 0 10px; gap: 8px; height: 48px; }
   .menu-toggle { width: 52px; height: 52px; font-size: 30px; }
-  .topbar-day { display: flex; align-items: center; font-size: 12px; padding: 2px 7px; letter-spacing: .06em; color: var(--orange); border-color: var(--orange); order: 1; }
+  .topbar-day { display: flex; align-items: center; font-size: 14px; padding: 4px 10px; letter-spacing: .1em; color: var(--orange); border-color: var(--orange); order: 1; }
   .role-badge { order: 2; font-size: 12px; padding: 4px 7px; min-width: 0; }
   .switch-role-btn { order: 3; }
   .live-badge { order: 4; display: none; }
@@ -2337,45 +2337,47 @@ function renderSidelineControls() {
   const isRunning  = practiceStartTime && !practicePausedAt;
 
   const btnStyle  = 'padding:7px 13px;border:none;font-family:var(--font-display);font-size:13px;letter-spacing:.06em;cursor:pointer;border-radius:2px;margin-left:5px';
-  const solidGray = 'padding:7px 10px;background:#555;color:#fff;border:none;font-family:var(--font-display);font-size:12px;letter-spacing:.06em;cursor:pointer;border-radius:2px;margin-left:5px';
-  const dimStyle  = 'padding:7px 10px;background:#888;color:#fff;border:none;font-family:var(--font-display);font-size:12px;letter-spacing:.06em;cursor:pointer;border-radius:2px;margin-left:5px';
+  const grayBtn   = 'padding:7px 10px;background:#555;color:#fff;border:none;font-family:var(--font-display);font-size:12px;letter-spacing:.06em;cursor:pointer;border-radius:2px;margin-left:5px';
+  const disStyle  = 'padding:7px 10px;background:#333;color:#666;border:none;font-family:var(--font-display);font-size:12px;letter-spacing:.06em;cursor:default;border-radius:2px;margin-left:5px';
 
   if (notStarted) {
-    el.innerHTML = '<button onclick="window.startPractice()" style="' + btnStyle + ';background:#2e8b2e;color:#fff;font-size:15px">▶ START PRACTICE</button>';
+    el.innerHTML =
+      '<button onclick="window.startPractice()" style="' + btnStyle + ';background:#2e8b2e;color:#fff;font-size:15px">▶ START PRACTICE</button>' +
+      '<button disabled style="' + disStyle + '">⏭ SKIP</button>' +
+      '<button disabled style="' + disStyle + '">+2m</button>' +
+      '<button disabled style="' + disStyle + '">+5m</button>' +
+      '<button disabled style="' + disStyle + '">RESET</button>';
     return;
   }
 
-  const mainBtn = isRunning
-    ? '<button onclick="window.pausePractice()"  style="' + btnStyle + ';background:#555;color:#fff">⏸ PAUSE</button>'
-    : '<button onclick="window.resumePractice()" style="' + btnStyle + ';background:#2e8b2e;color:#fff">▶ RESUME</button>';
+  const pauseResumeBtn = isRunning
+    ? '<button onclick="window.pausePractice()"  style="' + grayBtn + ';background:#a83020;min-width:96px">⏸ PAUSE</button>'
+    : '<button onclick="window.resumePractice()" style="' + grayBtn + ';background:#2e8b2e;min-width:96px">▶ RESUME</button>';
 
   el.innerHTML =
-    mainBtn +
-    (isRunning ? '<button onclick="window.skipPeriod()" style="' + solidGray + '" title="Skip to next period">⏭ SKIP</button>' : '') +
-    (isRunning ? '<button onclick="window.addTimeToPeriod(2)" style="' + dimStyle + '" title="Add 2 minutes">+2m</button>' : '') +
-    (isRunning ? '<button onclick="window.addTimeToPeriod(5)" style="' + dimStyle + '" title="Add 5 minutes">+5m</button>' : '') +
-    '<button onclick="window.resetPractice()" style="' + dimStyle + ';background:#aaa">RESET</button>';
+    pauseResumeBtn +
+    '<button onclick="window.skipPeriod()"      style="' + grayBtn + '">⏭ SKIP</button>' +
+    '<button onclick="window.addTimeToPeriod(2)" style="' + grayBtn + '">+2m</button>' +
+    '<button onclick="window.addTimeToPeriod(5)" style="' + grayBtn + '">+5m</button>' +
+    '<button onclick="window.resetPractice()"   style="' + grayBtn + '">RESET</button>';
 }
 
 // Renders a period overview strip showing all periods with status dots
 function renderPeriodStrip() {
-  if (!practiceStartTime) return '';
-  const status = practicePausedAt
-    ? calcCurrentPeriod(practiceStartTime, practicePausedAt)
-    : calcCurrentPeriod(practiceStartTime);
+  const status = practiceStartTime
+    ? (practicePausedAt ? calcCurrentPeriod(practiceStartTime, practicePausedAt) : calcCurrentPeriod(practiceStartTime))
+    : null;
   const currentIdx = status ? status.periodIdx : -1;
 
-  return '<div style="display:flex;gap:4px;flex-wrap:wrap;padding:10px 0 6px">' +
+  return '<div style="display:flex;gap:6px;flex-wrap:wrap;padding:10px 0 6px">' +
     SCHEDULE.map((row, i) => {
       const isDone    = currentIdx > i || currentIdx === -1;
       const isCurrent = currentIdx === i;
-      const bg = isCurrent ? 'var(--orange)' : isDone ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)';
-      const color = isCurrent ? '#fff' : isDone ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.55)';
-      const border = isCurrent ? '2px solid var(--orange)' : '1px solid rgba(255,255,255,0.1)';
-      const typeColors = {indy:'#4f82f7',combo:'#e85c00',team:'#2e8b2e',tempo:'#888'};
-      const dot = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:' + (typeColors[row.type]||'#888') + ';margin-right:4px;vertical-align:middle"></span>';
-      return '<div style="padding:3px 8px;background:' + bg + ';color:' + color + ';border:' + border + ';font-family:var(--font-display);font-size:10px;letter-spacing:.04em;white-space:nowrap;' + (isDone&&!isCurrent?'text-decoration:line-through':'') + '">' +
-        dot + row.period.split(' ')[0] +
+      const bg     = isCurrent ? '#333' : isDone ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)';
+      const color  = isCurrent ? '#fff' : isDone ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.5)';
+      const border = isCurrent ? '2px solid #999' : '1px solid rgba(255,255,255,0.1)';
+      return '<div style="padding:6px 14px;background:' + bg + ';color:' + color + ';border:' + border + ';font-family:var(--font-display);font-size:13px;letter-spacing:.06em;white-space:nowrap;' + (isDone&&!isCurrent?'text-decoration:line-through':'') + '">' +
+        row.period +
       '</div>';
     }).join('') +
   '</div>';
@@ -2480,6 +2482,48 @@ function checkNotifications(displayStatus) {
 
 window.dismissNotif = dismissNotif;
 
+
+// Build player chips for a given position group and schedule row
+function buildPlayerChips(myPos, row) {
+  const unit = row ? (row.unit || 'all') : 'all';
+  const periodType = row ? row.type : 'tempo';
+
+  const groupPlayers = PLAYERS.filter(p => {
+    const ppos = playerGroupForType(p, periodType);
+    return ppos === myPos || p.pos === myPos || p.primaryPos === myPos;
+  });
+
+  // Sort: present first, absent last
+  groupPlayers.sort((a,b) => (isPresent(b.id)?1:0) - (isPresent(a.id)?1:0));
+
+  const unitPlayers = unit === 'all' ? groupPlayers : groupPlayers.filter(p => {
+    const d = (p.depth && p.depth[myPos] !== undefined) ? p.depth[myPos] : 1;
+    if (unit === '1st')   return d === 1;
+    if (unit === '2nd')   return d === 2;
+    if (unit === '3rd')   return d === 3;
+    if (unit === 'scout') return d === 0;
+    return true;
+  });
+
+  if (!unitPlayers.length) return '';
+
+  const chips = unitPlayers.map(p => {
+    const dot = isPresent(p.id)
+      ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#2e8b2e;margin-right:5px;vertical-align:middle"></span>'
+      : '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#a83020;margin-right:5px;vertical-align:middle"></span>';
+    return '<div style="display:flex;align-items:center;padding:4px 8px;background:var(--surface2);border:1px solid var(--rule);font-size:12px">' +
+      dot +
+      '<span style="font-family:var(--font-mono);color:var(--ink3);font-size:10px;margin-right:5px">#' + p.num + '</span>' +
+      '<span style="font-family:var(--font-body);font-weight:600;color:var(--ink)">' + p.name + '</span>' +
+    '</div>';
+  }).join('');
+
+  return '<div style="margin-top:8px">' +
+    '<div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;color:var(--ink4);margin-bottom:8px">PLAYERS</div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:6px">' + chips + '</div>' +
+  '</div>';
+}
+
 // ── DYNAMIC PERIOD MANAGEMENT ─────────────────────────────────────────────
 function applyPeriodOffset(periodIdx, offsetMs) {
   periodOffsets[periodIdx] = (periodOffsets[periodIdx] || 0) + offsetMs;
@@ -2548,7 +2592,7 @@ function tickSideline() {
   const timerEl = document.getElementById('sidelineTimer');
   const periodEl = document.getElementById('sidelinePeriodName');
   const drillEl  = document.getElementById('sidelineDrill');
-  const nextEl   = document.getElementById('sidelineNext');
+  const nextEl   = document.getElementById('sidelineNextContent');
   const barEl    = document.getElementById('sidelineBar');
 
   if (!timerEl) return;
@@ -2577,6 +2621,75 @@ function tickSideline() {
   if (periodEl) periodEl.textContent = row.period.toUpperCase();
   if (drillEl)  drillEl.textContent  = drill;
 
+  // Update unit label in header
+  const unitLabelEl = document.getElementById('sidelineUnit');
+  if (unitLabelEl) unitLabelEl.innerHTML = unitPill(row.unit||'all');
+
+  // ── Item 1: Players in current unit for this group ────────────────────
+  const playersEl = document.getElementById('sidelinePlayers');
+  if (playersEl) {
+    const myPos = currentRole === 'HC' ? 'QB' : currentRole;
+    const unit  = row.unit || 'all';
+
+    // Get players in my group routed here for this period type
+    const groupPlayers = PLAYERS.filter(p => {
+      const ppos = playerGroupForType(p, row.type);
+      return ppos === myPos || p.pos === myPos || p.primaryPos === myPos;
+    });
+
+    // Filter by unit if not 'all'
+    groupPlayers.sort((a,b) => (isPresent(b.id)?1:0) - (isPresent(a.id)?1:0));
+    const unitPlayers = unit === 'all' ? groupPlayers : groupPlayers.filter(p => {
+      const d = (p.depth && p.depth[myPos] !== undefined) ? p.depth[myPos] : 1;
+      if (unit === '1st')   return d === 1;
+      if (unit === '2nd')   return d === 2;
+      if (unit === '3rd')   return d === 3;
+      if (unit === 'scout') return d === 0;
+      return true;
+    });
+
+    if (unitPlayers.length > 0) {
+      const presentBadge = p => isPresent(p.id)
+        ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#2e8b2e;margin-right:5px;vertical-align:middle"></span>'
+        : '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#a83020;margin-right:5px;vertical-align:middle"></span>';
+
+      playersEl.innerHTML =
+        '<div style="margin-top:8px">' +
+          '<div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;color:var(--ink4);margin-bottom:8px">PLAYERS</div>' +
+          '<div style="display:flex;flex-wrap:wrap;gap:6px">' +
+            unitPlayers.map(p =>
+              '<div style="display:flex;align-items:center;padding:4px 8px;background:var(--surface2);border:1px solid var(--rule);font-size:12px">' +
+                presentBadge(p) +
+                '<span style="font-family:var(--font-mono);color:var(--ink3);font-size:10px;margin-right:5px">#' + p.num + '</span>' +
+                '<span style="font-family:var(--font-body);font-weight:600;color:var(--ink)">' + p.name.split(' ')[0] + ' ' + p.name.split(' ').slice(-1)[0] + '</span>' +
+              '</div>'
+            ).join('') +
+          '</div>' +
+        '</div>';
+    } else {
+      playersEl.innerHTML = '';
+    }
+  }
+
+  // ── Item 2: HC all-group drill summary ────────────────────────────────
+  const allDrillsEl = document.getElementById('sidelineAllDrills');
+  if (allDrillsEl && currentRole === 'HC') {
+    const periodData = (scriptData[currentDay] && scriptData[currentDay][displayStatus.periodIdx]) || {};
+    allDrillsEl.innerHTML =
+      '<div style="margin-top:8px">' +
+        '<div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;color:var(--ink4);margin-bottom:8px">ALL GROUPS</div>' +
+        '<div style="display:flex;flex-direction:column;gap:5px">' +
+          POS_LIST.map(p => {
+            const d = periodData[p] || '—';
+            return '<div style="display:flex;gap:8px;align-items:baseline">' +
+              '<span style="font-family:var(--font-display);font-size:11px;letter-spacing:.08em;color:var(--royal-dark);min-width:32px">' + p + '</span>' +
+              '<span style="font-size:12px;color:var(--ink2);font-family:var(--font-body)">' + d + '</span>' +
+            '</div>';
+          }).join('') +
+        '</div>' +
+      '</div>';
+  }
+
 
   // Check if we need to fire a notification
   checkNotifications(displayStatus);
@@ -2595,11 +2708,19 @@ function tickSideline() {
     if (nextRow) {
       const nextDrill = (scriptData[currentDay] && scriptData[currentDay][displayStatus.periodIdx + 1] && scriptData[currentDay][displayStatus.periodIdx + 1][pos]) || 'Full team';
       nextEl.innerHTML =
-        '<span style="font-family:var(--font-mono);font-size:11px;color:var(--ink3);min-width:36px">' + nextRow.start + '</span>' +
-        '<span style="flex:1;font-size:12px;color:var(--ink2)">' + nextRow.period + ' — ' + nextDrill + '</span>' +
-        '<span>' + pill(nextRow.type) + '</span>';
+        '<div style="background:var(--surface);border:2px solid var(--royal-dark);border-radius:2px;overflow:hidden;margin-bottom:14px">' +
+          '<div style="background:var(--royal-dark);padding:8px 14px;display:flex;align-items:center;justify-content:space-between">' +
+            '<span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;color:rgba(255,255,255,0.85)">⏭ NEXT</span>' +
+          '</div>' +
+          '<div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">' +
+            '<div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;color:var(--ink4);min-width:46px">PERIOD</span><span style="font-family:var(--font-display);font-size:16px;letter-spacing:.06em;color:var(--ink)">' + nextRow.period + '</span></div>' +
+            '<div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;color:var(--ink4);min-width:46px">DRILL</span><span style="font-family:var(--font-display);font-size:16px;letter-spacing:.06em;color:var(--ink)">' + nextDrill + '</span></div>' +
+            '<div style="display:flex;align-items:center;gap:10px"><span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;color:var(--ink4);min-width:46px">UNIT</span><span>' + unitPill(nextRow.unit||'all') + '</span></div>' +
+            buildPlayerChips(pos, nextRow) +
+          '</div>' +
+        '</div>';
     } else {
-      nextEl.innerHTML = '<span style="font-size:12px;color:var(--ink3)">Practice complete after this period</span>';
+      nextEl.innerHTML = '<div style="background:var(--surface);border:2px solid var(--royal-dark);border-radius:2px;overflow:hidden;margin-bottom:14px"><div style="background:var(--royal-dark);padding:8px 14px;display:flex;align-items:center;justify-content:space-between"><span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;color:rgba(255,255,255,0.85)">⏭ NEXT</span></div><div style="padding:12px 14px;font-size:13px;color:var(--ink3);font-family:var(--font-body)">Practice complete after this period</div></div>';
     }
   }
 }
@@ -2609,47 +2730,100 @@ function renderSideline(el) {
   const isHC = currentRole === 'HC';
   const myPlayers = PLAYERS.filter(p => p.pos === pos && p.weak && p.weak.length > 0 && isPresent(p.id)).slice(0, 3);
   const notes = myPlayers.map(p =>
-    '<div class="player-note"><b>' + p.name + ':</b> watch ' + p.weak[0] + '</div>'
+    '<div class="player-note"><b>' + p.name + ':</b> ' + p.weak[0] + '</div>'
   ).join('');
 
   const notStarted = !practiceStartTime;
-  const status = practiceStartTime ? calcCurrentPeriod(practiceStartTime) : null;
-  const row = (status && status.periodIdx >= 0) ? SCHEDULE[status.periodIdx] : SCHEDULE[0];
 
   el.innerHTML =
+    // ── Header: title + coach label + HC controls ──
     '<div class="content-header">' +
       '<span class="content-title">SIDELINE</span>' +
-      '<span class="content-meta">' + pos + ' COACH</span>' +
       '<div style="flex:1"></div>' +
       (isHC ? '<div id="sidelineControls"></div>' : '') +
     '</div>' +
+
     '<div class="mobile-view">' +
 
-    // Main current period card
-    '<div class="period-now">' +
-      '<div class="period-now-hd">' +
-        '<span class="period-now-label" id="sidelinePeriodName">' + (notStarted ? 'WAITING FOR HEAD COACH' : (row ? row.period.toUpperCase() : '')) + '</span>' +
-        '<span class="period-timer" id="sidelineTimer">' + (notStarted ? '--:--' : '') + '</span>' +
+    // ── NOW box — dark card ──
+    '<div style="background:var(--surface);border:2px solid var(--royal-dark);border-radius:2px;overflow:hidden;margin-bottom:10px">' +
+      '<div style="background:var(--royal-dark);padding:8px 14px;display:flex;align-items:center;justify-content:space-between">' +
+        '<span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;color:rgba(255,255,255,0.85)">▶ NOW</span>' +
+        '<span class="period-timer" id="sidelineTimer" style="font-size:22px;color:#fff">' + (notStarted ? '--:--' : '') + '</span>' +
       '</div>' +
-      // Progress bar
-      '<div style="height:4px;background:rgba(255,255,255,0.15);position:relative">' +
-        '<div id="sidelineBar" style="height:4px;background:var(--orange);width:0%;transition:width .8s linear"></div>' +
+      '<div style="height:3px;background:var(--rule)">' +
+        '<div id="sidelineBar" style="height:3px;background:var(--orange);width:0%;transition:width .8s linear"></div>' +
       '</div>' +
-      '<div class="period-now-body">' +
-        '<div class="period-drill-name" id="sidelineDrill">' + (notStarted ? 'Tap Start Practice to begin' : '') + '</div>' +
-        (notes ? '<div style="font-size:13px;color:#000;font-family:var(--font-mono);font-weight:600;margin:8px 0 5px">WATCH THESE PLAYERS</div><div class="period-player-notes">' + notes + '</div>' : '') +
+      '<div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">' +
+        '<div style="display:flex;align-items:baseline;gap:10px">' +
+          '<span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;color:var(--ink4);min-width:46px">PERIOD</span>' +
+          '<span class="period-now-label" id="sidelinePeriodName" style="font-size:16px;color:var(--ink)">' + (notStarted ? 'WAITING TO START' : '') + '</span>' +
+        '</div>' +
+        '<div style="display:flex;align-items:baseline;gap:10px">' +
+          '<span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;color:var(--ink4);min-width:46px">DRILL</span>' +
+          '<span class="period-drill-name" id="sidelineDrill" style="font-size:16px;color:var(--ink)">' + (notStarted ? 'Tap Start to begin' : '') + '</span>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:10px">' +
+          '<span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;color:var(--ink4);min-width:46px">UNIT</span>' +
+          '<span id="sidelineUnit"></span>' +
+        '</div>' +
+        '<div id="sidelinePlayers"></div>' +
+        (isHC ? '<div id="sidelineAllDrills"></div>' : '') +
       '</div>' +
+      (notes ?
+        '<div style="padding:0 14px 12px;border-top:1px solid var(--rule);padding-top:10px">' +
+          '<div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;color:var(--ink4);margin-bottom:6px">WATCH</div>' +
+          '<div class="period-player-notes">' + notes + '</div>' +
+        '</div>'
+      : '') +
     '</div>' +
 
-    // Next period
-    '<div class="period-next" id="sidelineNext">' +
-      '<span style="font-size:12px;color:var(--ink3)">' + (notStarted ? 'Schedule will appear when practice starts' : '') + '</span>' +
-    '</div>' +
+    // ── NEXT box ──
+    '<div id="sidelineNextContent" style="margin-bottom:14px"></div>' +
 
-    '<div style="text-align:center;padding:8px 0;font-size:13px;color:#000;font-family:var(--font-mono)">Clock updates in real time · synced across all coaches</div>' +
+    // ── Period strip ──
+    '<div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;color:rgba(255,255,255,0.5);margin-bottom:6px">ALL PERIODS</div>' +
     '<div id="periodStrip">' + renderPeriodStrip() + '</div>' +
+
+    '<div style="text-align:center;padding:10px 0 4px;font-size:11px;color:rgba(255,255,255,0.3);font-family:var(--font-mono)">synced across all coaches</div>' +
     '</div>';
 
+  // Always show players for period 0 (NOW) and period 1 (NEXT) pre-start
+  const myPosInit = currentRole === 'HC' ? 'QB' : currentRole;
+
+  // Pre-populate NOW box with first period info even before clock starts
+  const firstRow = SCHEDULE[0];
+  if (firstRow) {
+    const periodNameEl = document.getElementById('sidelinePeriodName');
+    const drillEl0     = document.getElementById('sidelineDrill');
+    const unitEl0      = document.getElementById('sidelineUnit');
+    const firstDrill   = (scriptData[currentDay]&&scriptData[currentDay][0]&&scriptData[currentDay][0][myPosInit]) || '—';
+    if (periodNameEl) periodNameEl.textContent = firstRow.period.toUpperCase();
+    if (drillEl0)     drillEl0.textContent     = firstDrill;
+    if (unitEl0)      unitEl0.innerHTML        = unitPill(firstRow.unit||'all');
+  }
+
+  const playersElInit = document.getElementById('sidelinePlayers');
+  if (playersElInit) playersElInit.innerHTML = buildPlayerChips(myPosInit, SCHEDULE[0]);
+  const nextElInit = document.getElementById('sidelineNextContent');
+  if (nextElInit && !practiceStartTime) {
+    const nr = SCHEDULE[1];
+    if (nr) {
+      const nd = (scriptData[currentDay]&&scriptData[currentDay][1]&&scriptData[currentDay][1][myPosInit])||'—';
+      nextElInit.innerHTML =
+        '<div style="background:var(--surface);border:2px solid var(--royal-dark);border-radius:2px;overflow:hidden;margin-bottom:14px">' +
+          '<div style="background:var(--royal-dark);padding:8px 14px;display:flex;align-items:center;justify-content:space-between">' +
+            '<span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;color:rgba(255,255,255,0.85)">⏭ NEXT</span>' +
+          '</div>' +
+          '<div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">' +
+            '<div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;color:var(--ink4);min-width:46px">PERIOD</span><span style="font-family:var(--font-display);font-size:16px;letter-spacing:.06em;color:var(--ink)">' + nr.period + '</span></div>' +
+            '<div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;color:var(--ink4);min-width:46px">DRILL</span><span style="font-family:var(--font-display);font-size:16px;letter-spacing:.06em;color:var(--ink)">' + nd + '</span></div>' +
+            '<div style="display:flex;align-items:center;gap:10px"><span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;color:var(--ink4);min-width:46px">UNIT</span><span>' + unitPill(nr.unit||'all') + '</span></div>' +
+            buildPlayerChips(myPosInit, nr) +
+          '</div>' +
+        '</div>';
+    }
+  }
   if (practiceStartTime) renderAndTickSideline();
   renderSidelineControls();
 }
@@ -2874,6 +3048,18 @@ function buildRoutingSection(existing) {
 }
 
 function getSkillsForPos(positions) {
+  const POS_SKILLS = {
+    QB:  ['footwork','drop mechanics','pocket presence','reading defenses','short passing','intermediate passing','deep ball','RPO reads'],
+    RB:  ['ball security','vision & burst','pass blocking','receiving','route running','blitz pickup','contact balance'],
+    WR:  ['route running','releases','hand catching','YAC','blocking','go routes','body control','contested catches'],
+    TE:  ['blocking technique','release vs LB','route running','hand catching','seam routes','red zone'],
+    OL:  ['stance & start','pass protection','run blocking','footwork','combo blocks','pulling technique','hand placement'],
+    DL:  ['first step quickness','hand fighting','gap responsibility','pass rush moves','pursuit angles','tackling','stunts'],
+    LB:  ['key & read','pass drops','blitz technique','tackling','pursuit','coverage vs TE','sideline speed'],
+    DB:  ['backpedal','hip flip','zone coverage','man coverage','press technique','ball skills','tackling in space'],
+    'K/P':['approach & plant','contact point','hang time','direction','kickoff depth','punting form','snapper timing'],
+    ST:  ['coverage lanes','gunner technique','return blocking','kickoff approach','punt return vision','wedge setting'],
+  };
   const all = new Set();
   positions.forEach(pos => (POS_SKILLS[pos]||[]).forEach(s => all.add(s)));
   return [...all].sort();
