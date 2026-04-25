@@ -34,9 +34,9 @@
 
   /* Ink */
   --ink:      #0d1117;
-  --ink2:     #3a4255;
-  --ink3:     #7a8399;
-  --ink4:     #b0b8cc;
+  --ink2:     #000;
+  --ink3:     #000;
+  --ink4:     #333;
 
   /* Borders — sharp, like printed ruled lines */
   --rule:     #d0d6e4;
@@ -249,13 +249,13 @@ html, body {
 }
 .topbar-logo span { color: var(--orange-mid); }
 .topbar-day {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: rgba(255,255,255,0.7);
-  background: rgba(255,255,255,0.08);
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: #fff;
+  background: transparent;
   padding: 3px 10px;
-  border: 1px solid rgba(255,255,255,0.12);
-  letter-spacing: .02em;
+  border: 1px solid rgba(255,255,255,0.8);
+  letter-spacing: .1em;
 }
 .topbar-spacer { flex: 1; }
 .live-badge {
@@ -334,18 +334,18 @@ html, body {
   overflow-y: auto;
 }
 .sidebar-section {
-  padding: 14px 12px 5px;
+  padding: 10px 12px 3px;
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: 13px;
   letter-spacing: .08em;
   color: rgba(255,255,255,0.45);
   border-top: 1px solid rgba(255,255,255,0.08);
-  margin-top: 4px;
+  margin-top: 2px;
   text-transform: uppercase;
 }
 .sidebar-section:first-child { margin-top: 0; border-top: none; }
 .sidebar-item {
-  padding: 10px 12px;
+  padding: 6px 12px;
   font-family: var(--font-head);
   font-size: 14px;
   font-weight: 600;
@@ -365,7 +365,7 @@ html, body {
   background: rgba(232,92,0,0.18);
 }
 .day-item {
-  padding: 9px 12px 9px 16px;
+  padding: 5px 12px 5px 16px;
   font-family: var(--font-head);
   font-size: 14px;
   font-weight: 500;
@@ -700,7 +700,7 @@ html, body {
   color: var(--ink);
   margin-bottom: 4px;
 }
-.period-drill-desc { font-size: 12px; color: var(--ink3); line-height: 1.5; margin-bottom: 8px; }
+.period-drill-desc { font-size: 14px; color: #000; line-height: 1.5; margin-bottom: 8px; }
 .period-player-notes { display: flex; flex-direction: column; gap: 4px; }
 .player-note {
   font-size: 11px; padding: 4px 8px;
@@ -718,8 +718,8 @@ html, body {
   align-items: center;
   gap: 10px;
 }
-.period-next-time { font-family: var(--font-mono); font-size: 11px; color: var(--ink3); min-width: 36px; font-weight: 500; }
-.period-next-label { font-size: 11px; color: var(--ink2); flex: 1; }
+.period-next-time { font-family: var(--font-mono); font-size: 13px; color: #000; min-width: 40px; font-weight: 500; }
+.period-next-label { font-size: 13px; color: #000; flex: 1; }
 .period-next-pill { flex-shrink: 0; }
 
 /* ══════════════════════════════════════════════════════
@@ -961,6 +961,7 @@ html, body {
   .presence-avatars { display: none; }
   #fbStatus { display: none !important; }
   .role-badge { font-size: 14px; padding: 3px 9px; }
+  .switch-role-btn { font-size: 11px !important; padding: 3px 7px !important; letter-spacing: .02em !important; }
   .topbar-logo { font-size: 17px; letter-spacing: 2px; }
 
   /* ── SIDEBAR — slide-over overlay on mobile ── */
@@ -1048,6 +1049,33 @@ html, body {
 }
 
 /* Desktop: hide menu toggle */
+/* ── NOTIFICATION BANNER ── */
+.notif-banner {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 9999;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-head);
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  transform: translateY(-100%);
+  transition: transform .3s ease;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.notif-banner.visible { transform: translateY(0); }
+.notif-banner.warning { background: var(--orange); }
+.notif-banner.new-period { background: var(--royal-dark); border-bottom: 3px solid var(--orange); }
+.notif-banner.done { background: #1a7a40; }
+.notif-icon { font-size: 20px; flex-shrink: 0; }
+.notif-text { flex: 1; line-height: 1.3; }
+.notif-sub { font-size: 12px; font-weight: 400; opacity: .85; font-family: var(--font-body); }
+.notif-close { background: none; border: none; color: rgba(255,255,255,0.7); font-size: 18px; cursor: pointer; padding: 0 4px; flex-shrink: 0; }
+.notif-close:hover { color: #fff; }
+
 .menu-toggle { display: none; }
 .hidden { display: none !important; }
 /* ══════════════════════════════════════════════════════
@@ -1137,16 +1165,23 @@ html, body {
 
 <!-- ── APP ── -->
 <div id="app">
+  <div id="notifBanner" class="notif-banner">
+    <span class="notif-icon" id="notifIcon"></span>
+    <div class="notif-text">
+      <div id="notifTitle"></div>
+      <div class="notif-sub" id="notifSub"></div>
+    </div>
+    <button class="notif-close" onclick="dismissNotif()">✕</button>
+  </div>
   <div class="topbar">
     <button class="menu-toggle" onclick="window.toggleSidebar()" aria-label="Menu">☰</button>
     <span class="topbar-logo">WCHS <span style="color:var(--orange-mid)">FOOTBALL</span></span>
     <span class="topbar-day" id="topbarDay">MONDAY</span>
     <span class="topbar-spacer"></span>
     <div class="live-badge"><div class="live-dot"></div>LIVE</div>
-  <div id="fbStatus" style="font-size:10px;font-family:var(--font-mono);padding:3px 8px;border-radius:20px;background:rgba(76,175,125,0.12);color:var(--rb);border:1px solid rgba(76,175,125,0.25);display:none">FIREBASE SYNCING</div>
     <div class="presence-avatars" id="presenceAvatars"></div>
     <span class="role-badge" id="roleBadge"></span>
-    <button onclick="window.doLogout()" style="padding:4px 10px;background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.45);font-family:var(--font-display);font-size:15px;letter-spacing:.06em;cursor:pointer;transition:all .12s" onmouseover="this.style.color='#fff';this.style.borderColor='rgba(255,255,255,0.5)'" onmouseout="this.style.color='rgba(255,255,255,0.45)';this.style.borderColor='rgba(255,255,255,0.2)'">&#8592; SWITCH ROLE</button>
+    <button class="switch-role-btn" onclick="window.doLogout()" style="padding:4px 10px;background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.45);font-family:var(--font-display);font-size:15px;letter-spacing:.06em;cursor:pointer;transition:all .12s" onmouseover="this.style.color='#fff';this.style.borderColor='rgba(255,255,255,0.5)'" onmouseout="this.style.color='rgba(255,255,255,0.45)';this.style.borderColor='rgba(255,255,255,0.2)'">&#8592; SWITCH ROLE</button>
   </div>
   <div class="main">
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="window.toggleSidebar()"></div>
@@ -1366,8 +1401,7 @@ var currentRole='';
 var currentView='script';
 var currentDay='Mon';
 var selectedRoleId=null;
-var sidelineTimer=null;
-var sidelinePeriod=1;
+var sidelineInterval=null;
 
 // Script data: day -> period index -> pos -> drill
 const scriptData={};
@@ -1476,7 +1510,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function doLogout(){
   if(db) remove(ref(db, 'playscript/presence/'+currentRole));
-  if(sidelineTimer) clearInterval(sidelineTimer);
+  if(sidelineInterval) { clearInterval(sidelineInterval); sidelineInterval = null; }
   selectedRoleId=null;
   currentRole='';
   currentView='script';
@@ -1565,14 +1599,10 @@ function doLogin(){
       }
     });
     initRoster();
+    initSidelineSync();
   }
 
   // Show Firebase sync badge if configured
-  if (FIREBASE_READY) {
-    const badge = document.getElementById('fbStatus');
-    if (badge) badge.style.display = 'block';
-  }
-
   renderPresence();
 
   // Build HC-only nav items directly in the DOM
@@ -1584,6 +1614,8 @@ function doLogin(){
   }
   setView('script');
   if (!FIREBASE_READY) startPeerActivity();
+  // Ask for push notification permission
+  setTimeout(requestPushPermission, 2000);
 }
 
 // Track online coaches from Firebase
@@ -1730,7 +1762,7 @@ function renderScript(el){
 
   const table=`<div class="script-wrap">
     <table class="script-table">
-      <tr><th>Start</th><th>Type</th><th style="min-width:120px">Period</th>${posHeaders}<th></th></tr>
+      <tr><th style="color:#fff">Start</th><th style="color:#fff">Type</th><th style="min-width:120px;color:#fff">Period</th>${posHeaders}<th></th></tr>
       ${rows}
     </table>
   </div>`;
@@ -1890,7 +1922,7 @@ function renderPlayers(el){
   el.innerHTML=`
     <div class="content-header">
       <span class="content-title">ROSTER</span>
-      <span class="content-meta">${shown.length} OF ${PLAYERS.length} PLAYERS · ${dayLabel(currentDay)}</span>
+      <span class="content-meta">${shown.length} OF ${PLAYERS.length} PLAYERS</span>
     </div>
     <div class="filter-bar">${btns}</div>
     <div class="roster-table-wrap">
@@ -1906,53 +1938,361 @@ function renderPlayers(el){
     </div>`;
 }
 
-// ── SIDELINE VIEW ──────────────────────────────────────────────────────────
-let timerSecs=7*60;
-function renderSideline(el){
-  const pos=currentRole==='HC'?'QB':currentRole;
-  const d=DRILLS_BY_DAY[currentDay]&&DRILLS_BY_DAY[currentDay][pos];
-  const myPlayers=PLAYERS.filter(p=>p.pos===pos&&p.weak.length>0).slice(0,3);
+// ── SIDELINE VIEW — clock-anchored real-time ──────────────────────────────
 
-  const mins=Math.floor(timerSecs/60);
-  const secs=String(timerSecs%60).padStart(2,'0');
-
-  const upNext=SCHEDULE.slice(2,4).map((row,i)=>`
-    <div class="period-next">
-      <span class="period-next-time">${row.start}</span>
-      <span class="period-next-label">${row.period} — ${scriptData[currentDay][i+2]?.[pos]||'Full team'}</span>
-      <span class="period-next-pill">${pill(row.type)}</span>
-    </div>`).join('');
-
-  const notes=myPlayers.map(p=>`<div class="player-note"><b>${p.name}:</b> watch ${p.weak[0]}</div>`).join('');
-
-  el.innerHTML=`
-    <div class="content-header">
-      <span class="content-title">SIDELINE</span>
-      <span class="content-meta">${pos} COACH · ${dayLabel(currentDay)}</span>
-    </div>
-    <div class="mobile-view">
-      <div class="period-now">
-        <div class="period-now-hd">
-          <span class="period-now-label">NOW: INDY FUNDAMENTALS · ${SCHEDULE[1].start}</span>
-          <span class="period-timer" id="sidelineTimer">${mins}:${secs}</span>
-        </div>
-        <div class="period-now-body">
-          <div class="period-drill-name">${d?d[0]:'Full team drill'}</div>
-          <div class="period-drill-desc">Run your full group through the drill at full speed. Coaches: do not stop the drill — pull individuals aside between reps.</div>
-          ${notes?`<div style="font-size:10px;color:var(--ink3);font-family:var(--font-mono);margin-bottom:5px;margin-top:8px">WATCH THESE PLAYERS</div><div class="period-player-notes">${notes}</div>`:''}
-        </div>
-      </div>
-      ${upNext}
-      <div style="text-align:center;padding:8px 0;font-size:11px;color:var(--ink3);font-family:var(--font-mono)">Clock manager blows horn at period end · 30-sec transition</div>
-    </div>`;
-
-  if(sidelineTimer) clearInterval(sidelineTimer);
-  sidelineTimer=setInterval(()=>{
-    timerSecs=Math.max(0,timerSecs-1);
-    const t=document.getElementById('sidelineTimer');
-    if(t){const m=Math.floor(timerSecs/60);const s=String(timerSecs%60).padStart(2,'0');t.textContent=`${m}:${s}`;}
-  },1000);
+// Convert "3:40" time string to minutes since midnight
+function timeStrToMins(t) {
+  const parts = t.split(':').map(Number);
+  return parts[0] * 60 + (parts[1] || 0);
 }
+
+// Given practiceStartTime (ms), return {periodIdx, secsLeft, secsDone, totalSecs}
+function calcCurrentPeriod(startMs) {
+  const elapsedSecs = Math.floor((Date.now() - startMs) / 1000);
+  if (elapsedSecs < 0) return null;
+
+  // Build cumulative seconds for each period based on schedule durations
+  let cursor = 0;
+  for (let i = 0; i < SCHEDULE.length; i++) {
+    const row = SCHEDULE[i];
+    const dur = Math.max(0, (timeStrToMins(row.end) - timeStrToMins(row.start)) * 60);
+    if (dur <= 0) continue; // skip invalid periods
+    if (elapsedSecs < cursor + dur) {
+      return {
+        periodIdx: i,
+        secsLeft: cursor + dur - elapsedSecs,
+        secsDone: elapsedSecs - cursor,
+        totalSecs: dur
+      };
+    }
+    cursor += dur;
+  }
+  return { periodIdx: -1, secsLeft: 0, secsDone: 0, totalSecs: 0 }; // practice over
+}
+
+function fmtTime(secs) {
+  const m = Math.floor(Math.abs(secs) / 60);
+  const s = String(Math.abs(secs) % 60).padStart(2,'0');
+  return m + ':' + s;
+}
+
+let practiceStartTime = null; // ms epoch when practice started (adjusted for pauses)
+let practicePausedAt  = null; // ms epoch when practice was paused, null if running
+
+function startPractice() {
+  practiceStartTime = Date.now();
+  practicePausedAt  = null;
+  lastNotifPeriodIdx = -1;
+  warned15 = false;
+  if (db) {
+    set(ref(db, 'playscript/practiceStart'), practiceStartTime);
+    remove(ref(db, 'playscript/practicePaused'));
+  }
+  renderAndTickSideline();
+  renderSidelineControls();
+}
+
+function pausePractice() {
+  if (!practiceStartTime || practicePausedAt) return;
+  practicePausedAt = Date.now();
+  if (db) set(ref(db, 'playscript/practicePaused'), practicePausedAt);
+  renderSidelineControls();
+}
+
+function resumePractice() {
+  if (!practicePausedAt) return;
+  // Shift start time forward by how long we were paused
+  const pauseDuration = Date.now() - practicePausedAt;
+  practiceStartTime += pauseDuration;
+  practicePausedAt = null;
+  if (db) {
+    set(ref(db, 'playscript/practiceStart'), practiceStartTime);
+    remove(ref(db, 'playscript/practicePaused'));
+  }
+  renderAndTickSideline();
+  renderSidelineControls();
+}
+
+function resetPractice() {
+  practiceStartTime = null;
+  practicePausedAt  = null;
+  lastNotifPeriodIdx = -1;
+  warned15 = false;
+  dismissNotif();
+  if (db) {
+    remove(ref(db, 'playscript/practiceStart'));
+    remove(ref(db, 'playscript/practicePaused'));
+  }
+  if (sidelineInterval) { clearInterval(sidelineInterval); sidelineInterval = null; }
+  renderSideline(document.getElementById('mainContent'));
+}
+
+function renderSidelineControls() {
+  const el = document.getElementById('sidelineControls');
+  if (!el) return;
+  const isHC = currentRole === 'HC';
+  if (!isHC) { el.innerHTML = ''; return; }
+  const notStarted = !practiceStartTime;
+  const isPaused   = !!practicePausedAt;
+  const isRunning  = practiceStartTime && !practicePausedAt;
+
+  el.innerHTML = notStarted
+    ? '<button onclick="window.startPractice()" style="padding:8px 18px;background:#2e8b2e;color:#fff;border:none;font-family:var(--font-display);font-size:15px;letter-spacing:.08em;cursor:pointer;border-radius:2px">▶ START PRACTICE</button>'
+    : (isRunning
+      ? '<button onclick="window.pausePractice()" style="padding:8px 18px;background:var(--orange);color:#fff;border:none;font-family:var(--font-display);font-size:15px;letter-spacing:.08em;cursor:pointer;border-radius:2px;margin-right:8px">⏸ PAUSE</button>'
+        + '<button onclick="window.resetPractice()" style="padding:8px 14px;background:transparent;color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.2);font-family:var(--font-display);font-size:13px;letter-spacing:.06em;cursor:pointer">RESET</button>'
+      : '<button onclick="window.resumePractice()" style="padding:8px 18px;background:#2e8b2e;color:#fff;border:none;font-family:var(--font-display);font-size:15px;letter-spacing:.08em;cursor:pointer;border-radius:2px;margin-right:8px">▶ RESUME</button>'
+        + '<button onclick="window.resetPractice()" style="padding:8px 14px;background:transparent;color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.2);font-family:var(--font-display);font-size:13px;letter-spacing:.06em;cursor:pointer">RESET</button>'
+      );
+}
+
+// ── NOTIFICATION SYSTEM ────────────────────────────────────────────────────
+let lastNotifPeriodIdx = -1;
+let warned15 = false;
+let notifDismissTimer = null;
+let pushGranted = false;
+
+function requestPushPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') { pushGranted = true; return; }
+  if (Notification.permission !== 'denied') {
+    Notification.requestPermission().then(p => { pushGranted = p === 'granted'; });
+  }
+}
+
+function showBanner(type, icon, title, sub, autoDismissSecs) {
+  const banner = document.getElementById('notifBanner');
+  const iconEl = document.getElementById('notifIcon');
+  const titleEl = document.getElementById('notifTitle');
+  const subEl   = document.getElementById('notifSub');
+  if (!banner) return;
+
+  // Clear any pending auto-dismiss
+  if (notifDismissTimer) clearTimeout(notifDismissTimer);
+
+  // Remove old type classes
+  banner.classList.remove('warning', 'new-period', 'done');
+  banner.classList.add(type);
+
+  iconEl.textContent  = icon;
+  titleEl.textContent = title;
+  subEl.textContent   = sub;
+
+  banner.classList.add('visible');
+
+  if (autoDismissSecs) {
+    notifDismissTimer = setTimeout(() => dismissNotif(), autoDismissSecs * 1000);
+  }
+
+  // Also send browser push notification if permission granted
+  if (pushGranted && Notification.permission === 'granted') {
+    try {
+      new Notification(title, { body: sub, icon: '', silent: false });
+    } catch(e) {}
+  }
+}
+
+function dismissNotif() {
+  const banner = document.getElementById('notifBanner');
+  if (banner) banner.classList.remove('visible');
+  if (notifDismissTimer) clearTimeout(notifDismissTimer);
+}
+
+// Called from tickSideline — checks whether we need to fire a notification
+function checkNotifications(displayStatus) {
+  if (!displayStatus || displayStatus.periodIdx === -1) return;
+  if (practicePausedAt) return; // no notifications while paused
+
+  const idx = displayStatus.periodIdx;
+  const secsLeft = displayStatus.secsLeft;
+  const row = SCHEDULE[idx];
+  const pos = currentRole === 'HC' ? 'QB' : currentRole;
+  const drill = (scriptData[currentDay] && scriptData[currentDay][idx] && scriptData[currentDay][idx][pos]) || 'Full team';
+
+  // New period started
+  if (idx !== lastNotifPeriodIdx) {
+    lastNotifPeriodIdx = idx;
+    warned15 = false;
+    const nextRow = SCHEDULE[idx + 1];
+    showBanner(
+      'new-period',
+      '▶',
+      row.period.toUpperCase(),
+      drill + (nextRow ? ' · Up next: ' + nextRow.period : ''),
+      6
+    );
+  }
+
+  // 15-second warning
+  if (!warned15 && secsLeft <= 15 && secsLeft > 0) {
+    warned15 = true;
+    const nextRow = SCHEDULE[idx + 1];
+    showBanner(
+      'warning',
+      '⚠',
+      '15 SECONDS — ' + row.period.toUpperCase() + ' ENDING',
+      nextRow ? 'Up next: ' + nextRow.period : 'Practice complete after this period',
+      12
+    );
+  }
+
+  // Practice complete
+  if (idx === -1 && lastNotifPeriodIdx !== -999) {
+    lastNotifPeriodIdx = -999;
+    showBanner('done', '✓', 'PRACTICE COMPLETE', 'Great work today!', 10);
+  }
+}
+
+window.dismissNotif = dismissNotif;
+
+function renderAndTickSideline() {
+  if (sidelineInterval) clearInterval(sidelineInterval);
+  sidelineInterval = setInterval(() => {
+    // Always check for notifications even if not on sideline view
+    if (practiceStartTime && !practicePausedAt) {
+      const st = calcCurrentPeriod(practiceStartTime);
+      if (st) checkNotifications(st);
+    }
+    if (currentView !== 'sideline') return;
+    tickSideline();
+  }, 1000);
+  tickSideline(); // immediate first tick
+}
+
+function tickSideline() {
+  const status = practiceStartTime ? calcCurrentPeriod(practiceStartTime) : null;
+  const timerEl = document.getElementById('sidelineTimer');
+  const periodEl = document.getElementById('sidelinePeriodName');
+  const drillEl  = document.getElementById('sidelineDrill');
+  const nextEl   = document.getElementById('sidelineNext');
+  const barEl    = document.getElementById('sidelineBar');
+
+  if (!timerEl) return;
+
+  if (!status || !practiceStartTime) {
+    timerEl.textContent = '--:--';
+    return;
+  }
+
+  // When paused, recalculate using the paused moment so display freezes
+  const displayStatus = practicePausedAt
+    ? calcCurrentPeriod(practiceStartTime + (Date.now() - practicePausedAt))
+    : status;
+
+  if (displayStatus.periodIdx === -1) {
+    timerEl.textContent = 'DONE';
+    if (periodEl) periodEl.textContent = 'PRACTICE COMPLETE';
+    return;
+  }
+
+  const row = SCHEDULE[displayStatus.periodIdx];
+  const pos = currentRole === 'HC' ? 'QB' : currentRole;
+  const drill = (scriptData[currentDay] && scriptData[currentDay][displayStatus.periodIdx] && scriptData[currentDay][displayStatus.periodIdx][pos]) || 'Full team';
+
+  timerEl.textContent = fmtTime(displayStatus.secsLeft);
+  if (periodEl) periodEl.textContent = row.period.toUpperCase();
+  if (drillEl)  drillEl.textContent  = drill;
+
+  // Check if we need to fire a notification
+  checkNotifications(displayStatus);
+
+  // Progress bar
+  const pct = Math.round((displayStatus.secsDone / displayStatus.totalSecs) * 100);
+  if (barEl) barEl.style.width = pct + '%';
+
+  // Next period
+  if (nextEl) {
+    const nextRow = SCHEDULE[displayStatus.periodIdx + 1];
+    if (nextRow) {
+      const nextDrill = (scriptData[currentDay] && scriptData[currentDay][displayStatus.periodIdx + 1] && scriptData[currentDay][displayStatus.periodIdx + 1][pos]) || 'Full team';
+      nextEl.innerHTML =
+        '<span style="font-family:var(--font-mono);font-size:11px;color:var(--ink3);min-width:36px">' + nextRow.start + '</span>' +
+        '<span style="flex:1;font-size:12px;color:var(--ink2)">' + nextRow.period + ' — ' + nextDrill + '</span>' +
+        '<span>' + pill(nextRow.type) + '</span>';
+    } else {
+      nextEl.innerHTML = '<span style="font-size:12px;color:var(--ink3)">Practice complete after this period</span>';
+    }
+  }
+}
+
+function renderSideline(el) {
+  const pos = currentRole === 'HC' ? 'QB' : currentRole;
+  const isHC = currentRole === 'HC';
+  const myPlayers = PLAYERS.filter(p => p.pos === pos && p.weak && p.weak.length > 0).slice(0, 3);
+  const notes = myPlayers.map(p =>
+    '<div class="player-note"><b>' + p.name + ':</b> watch ' + p.weak[0] + '</div>'
+  ).join('');
+
+  const notStarted = !practiceStartTime;
+  const status = practiceStartTime ? calcCurrentPeriod(practiceStartTime) : null;
+  const row = (status && status.periodIdx >= 0) ? SCHEDULE[status.periodIdx] : SCHEDULE[0];
+
+  el.innerHTML =
+    '<div class="content-header">' +
+      '<span class="content-title">SIDELINE</span>' +
+      '<span class="content-meta">' + pos + ' COACH · ' + dayLabel(currentDay) + '</span>' +
+      '<div style="flex:1"></div>' +
+      (isHC ? '<div id="sidelineControls"></div>' : '') +
+    '</div>' +
+    '<div class="mobile-view">' +
+
+    // Main current period card
+    '<div class="period-now">' +
+      '<div class="period-now-hd">' +
+        '<span class="period-now-label" id="sidelinePeriodName">' + (notStarted ? 'WAITING FOR HEAD COACH' : (row ? row.period.toUpperCase() : '')) + '</span>' +
+        '<span class="period-timer" id="sidelineTimer">' + (notStarted ? '--:--' : '') + '</span>' +
+      '</div>' +
+      // Progress bar
+      '<div style="height:4px;background:rgba(255,255,255,0.15);position:relative">' +
+        '<div id="sidelineBar" style="height:4px;background:var(--orange);width:0%;transition:width .8s linear"></div>' +
+      '</div>' +
+      '<div class="period-now-body">' +
+        '<div class="period-drill-name" id="sidelineDrill">' + (notStarted ? 'Tap Start Practice to begin' : '') + '</div>' +
+        (notes ? '<div style="font-size:13px;color:#000;font-family:var(--font-mono);font-weight:600;margin:8px 0 5px">WATCH THESE PLAYERS</div><div class="period-player-notes">' + notes + '</div>' : '') +
+      '</div>' +
+    '</div>' +
+
+    // Next period
+    '<div class="period-next" id="sidelineNext">' +
+      '<span style="font-size:12px;color:var(--ink3)">' + (notStarted ? 'Schedule will appear when practice starts' : '') + '</span>' +
+    '</div>' +
+
+    '<div style="text-align:center;padding:8px 0;font-size:13px;color:#000;font-family:var(--font-mono)">Clock updates in real time · synced across all coaches</div>' +
+    '</div>';
+
+  if (practiceStartTime) renderAndTickSideline();
+  renderSidelineControls();
+}
+
+// Listen for practice start from Firebase (so all coaches sync automatically)
+function initSidelineSync() {
+  if (!db) return;
+  onValue(ref(db, 'playscript/practiceStart'), snap => {
+    const val = snap.val();
+    if (val && val !== practiceStartTime) {
+      practiceStartTime = val;
+      if (currentView === 'sideline') {
+        renderSideline(document.getElementById('mainContent'));
+      } else {
+        renderAndTickSideline();
+      }
+    } else if (!val) {
+      practiceStartTime = null;
+      if (sidelineInterval) { clearInterval(sidelineInterval); sidelineInterval = null; }
+    }
+    if (currentView === 'sideline') renderSidelineControls();
+  });
+  onValue(ref(db, 'playscript/practicePaused'), snap => {
+    const val = snap.val();
+    practicePausedAt = val || null;
+    if (currentView === 'sideline') renderSidelineControls();
+  });
+}
+
+window.startPractice  = startPractice;
+window.pausePractice  = pausePractice;
+window.resumePractice = resumePractice;
+window.resetPractice  = resetPractice;
 
 // ── ROSTER EDITOR ─────────────────────────────────────────────────────────
 let rosterSearch = '';
