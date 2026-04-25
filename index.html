@@ -1612,6 +1612,11 @@ function doLogin(){
     });
     initRoster();
     initSidelineSync();
+    // Clear any stale practice state from previous sessions
+    remove(ref(db, 'playscript/practiceStart'));
+    remove(ref(db, 'playscript/practicePaused'));
+    practiceStartTime = null;
+    practicePausedAt  = null;
   }
 
   // Show Firebase sync badge if configured
@@ -1960,7 +1965,7 @@ function timeStrToMins(t) {
 
 // Given practiceStartTime (ms), return {periodIdx, secsLeft, secsDone, totalSecs}
 function calcCurrentPeriod(startMs) {
-  const elapsedSecs = Math.floor((Date.now() - startMs) / 1000);
+  const elapsedSecs = Math.floor((Date.now() - Number(startMs)) / 1000);
   if (elapsedSecs < 0) return null;
 
   // Build cumulative seconds for each period based on schedule durations
@@ -2186,7 +2191,7 @@ function tickSideline() {
     return;
   }
 
-  // When paused, recalculate using the paused moment so display freezes
+  // When paused, freeze display at the moment pause was pressed
   const displayStatus = practicePausedAt
     ? calcCurrentPeriod(practiceStartTime + (Date.now() - practicePausedAt))
     : status;
@@ -2281,8 +2286,8 @@ function initSidelineSync() {
   if (!db) return;
   onValue(ref(db, 'playscript/practiceStart'), snap => {
     const val = snap.val();
-    if (val && val !== practiceStartTime) {
-      practiceStartTime = val;
+    if (val && Number(val) !== practiceStartTime) {
+      practiceStartTime = Number(val);
       if (currentView === 'sideline') {
         renderSideline(document.getElementById('mainContent'));
       } else {
@@ -2296,7 +2301,7 @@ function initSidelineSync() {
   });
   onValue(ref(db, 'playscript/practicePaused'), snap => {
     const val = snap.val();
-    practicePausedAt = val || null;
+    practicePausedAt = val ? Number(val) : null;
     if (currentView === 'sideline') renderSidelineControls();
   });
 }
