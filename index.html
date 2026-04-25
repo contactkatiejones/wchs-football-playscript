@@ -1641,30 +1641,8 @@ function doLogin(){
         set(ref(db, 'playscript/script'), scriptData);
       }
     });
-    // Load saved schedule if one exists - validate durations before accepting
-    get(ref(db, 'playscript/schedule')).then(snap => {
-      if (snap.exists() && Array.isArray(snap.val())) {
-        const loaded = snap.val();
-        // Validate: every period must have start, end, and positive duration
-        const valid = loaded.every(row => {
-          if (!row.start || !row.end) return false;
-          const startParts = row.start.split(':').map(Number);
-          const endParts   = row.end.split(':').map(Number);
-          const startMins  = startParts[0]*60 + (startParts[1]||0);
-          const endMins    = endParts[0]*60   + (endParts[1]||0);
-          return endMins > startMins; // end must be after start
-        });
-        if (valid && loaded.length > 0) {
-          SCHEDULE.length = 0;
-          loaded.forEach(s => SCHEDULE.push(s));
-          if (currentView === 'script') render();
-        } else {
-          // Bad schedule in Firebase — clear it and use default
-          console.log('Invalid schedule in Firebase, using default');
-          remove(ref(db, 'playscript/schedule'));
-        }
-      }
-    });
+    // NOTE: Schedule is always loaded from the hardcoded default on login.
+    // This prevents stale/corrupted schedule data in Firebase from breaking the clock.
     // HC clears stale practice data and starts sync
     // Position coaches sync from Firebase immediately
     if (currentRole === 'HC') {
@@ -1672,9 +1650,10 @@ function doLogin(){
       practiceStartTime = null;
       practicePausedAt = null;
       practiceStartedThisSession = false;
-      // Best-effort clear on Firebase (async, may lose race with onValue)
+      // Clear stale Firebase data — schedule, practice start, pause
       remove(ref(db, 'playscript/practiceStart'));
       remove(ref(db, 'playscript/practicePaused'));
+      remove(ref(db, 'playscript/schedule'));
       initRoster();
       initSidelineSync();
     } else {
