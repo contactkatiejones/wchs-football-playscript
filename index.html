@@ -968,7 +968,7 @@ html, body {
 
   /* ── TOPBAR ── */
   .topbar { padding: 0 10px; gap: 8px; height: 48px; }
-  .menu-toggle { width: 44px; height: 44px; font-size: 24px; }
+  .menu-toggle { width: 52px; height: 52px; font-size: 30px; }
   .topbar-day { display: flex; align-items: center; font-size: 12px; padding: 2px 7px; letter-spacing: .06em; color: var(--orange); border-color: var(--orange); order: 1; }
   .role-badge { order: 2; font-size: 12px; padding: 4px 7px; min-width: 0; }
   .switch-role-btn { order: 3; }
@@ -1641,12 +1641,28 @@ function doLogin(){
         set(ref(db, 'playscript/script'), scriptData);
       }
     });
-    // Load saved schedule if one exists
+    // Load saved schedule if one exists - validate durations before accepting
     get(ref(db, 'playscript/schedule')).then(snap => {
       if (snap.exists() && Array.isArray(snap.val())) {
-        SCHEDULE.length = 0;
-        snap.val().forEach(s => SCHEDULE.push(s));
-        if (currentView === 'script') render();
+        const loaded = snap.val();
+        // Validate: every period must have start, end, and positive duration
+        const valid = loaded.every(row => {
+          if (!row.start || !row.end) return false;
+          const startParts = row.start.split(':').map(Number);
+          const endParts   = row.end.split(':').map(Number);
+          const startMins  = startParts[0]*60 + (startParts[1]||0);
+          const endMins    = endParts[0]*60   + (endParts[1]||0);
+          return endMins > startMins; // end must be after start
+        });
+        if (valid && loaded.length > 0) {
+          SCHEDULE.length = 0;
+          loaded.forEach(s => SCHEDULE.push(s));
+          if (currentView === 'script') render();
+        } else {
+          // Bad schedule in Firebase — clear it and use default
+          console.log('Invalid schedule in Firebase, using default');
+          remove(ref(db, 'playscript/schedule'));
+        }
       }
     });
     // HC clears stale practice data and starts sync
@@ -1913,7 +1929,7 @@ function renderScript(el){
   el.innerHTML=`
     <div class="content-header">
       <span class="content-title">PRACTICE SCRIPT</span>
-      <span class="content-meta">3:30–5:00 PM</span>
+      <span class="content-meta">${SCHEDULE[0].start}–${SCHEDULE[SCHEDULE.length-1].end}</span>
       <div style="flex:1"></div>
       <button class="export-btn" onclick="window.doPrint()">PRINT / SAVE PDF</button>
     </div>
