@@ -2066,6 +2066,7 @@ let practicePausedAt  = null; // ms epoch when practice was paused, null if runn
 function startPractice() {
   practiceStartTime = Date.now();
   practicePausedAt  = null;
+  practiceStartedThisSession = true;
   lastNotifPeriodIdx = -1;
   warned15 = false;
   if (db) {
@@ -2100,6 +2101,7 @@ function resumePractice() {
 function resetPractice() {
   practiceStartTime = null;
   practicePausedAt  = null;
+  practiceStartedThisSession = false;
   lastNotifPeriodIdx = -1;
   warned15 = false;
   dismissNotif();
@@ -2350,6 +2352,9 @@ function renderSideline(el) {
 }
 
 // Listen for practice start from Firebase (so all coaches sync automatically)
+// Track whether HC started practice in THIS session
+let practiceStartedThisSession = false;
+
 function initSidelineSync() {
   if (!db) return;
   onValue(ref(db, 'playscript/practiceStart'), snap => {
@@ -2357,26 +2362,36 @@ function initSidelineSync() {
     if (val) {
       const ageMs = Date.now() - Number(val);
       const fourHours = 4 * 60 * 60 * 1000;
+
+      // Always clear values older than 4 hours
       if (ageMs > fourHours) {
-        // Stale — clear it so nobody loads a yesterday's session
         remove(ref(db, 'playscript/practiceStart'));
         remove(ref(db, 'playscript/practicePaused'));
         practiceStartTime = null;
         practicePausedAt  = null;
+        practiceStartedThisSession = false;
         if (sidelineInterval) { clearInterval(sidelineInterval); sidelineInterval = null; }
         if (currentView === 'sideline') renderSideline(document.getElementById('mainContent'));
         return;
       }
-      if (Number(val) !== practiceStartTime) {
-        practiceStartTime = Number(val);
-        if (currentView === 'sideline') {
-          renderSideline(document.getElementById('mainContent'));
-        } else {
-          renderAndTickSideline();
+
+      // Only sync if HC started practice in this session (prevents stale load on login)
+      // OR if this device is a position coach (not HC) and practice is clearly active
+      const isPositionCoach = currentRole !== 'HC';
+      if (practiceStartedThisSession || isPositionCoach) {
+        if (Number(val) !== practiceStartTime) {
+          practiceStartTime = Number(val);
+          if (currentView === 'sideline') {
+            renderSideline(document.getElementById('mainContent'));
+          } else {
+            renderAndTickSideline();
+          }
         }
       }
+      // If HC and hasn't started this session — ignore the stored value
     } else {
       practiceStartTime = null;
+      practiceStartedThisSession = false;
       if (sidelineInterval) { clearInterval(sidelineInterval); sidelineInterval = null; }
     }
     if (currentView === 'sideline') renderSidelineControls();
