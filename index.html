@@ -1,0 +1,2182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Whiteland Warriors — Practice Script</title>
+<style>
+/* ═══════════════════════════════════════════════════════
+   WHITELAND FOOTBALL — NFL-STYLE PRACTICE SCRIPT
+   Inspired by actual NFL ops room aesthetics:
+   • Light background / dark ink (like printed scripts)
+   • Hard ruled lines, zero border-radius on data tables
+   • Condensed athletic headers (Bebas Neue)
+   • Dense information layout with strict typographic grid
+   • Warriors brand: Royal blue #1a3fa8 + Orange #e85c00
+   ═══════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Warriors brand */
+  --royal:      #1a3fa8;
+  --royal-dark: #122d80;
+  --royal-mid:  #2555d4;
+  --royal-lite: #5585f8;
+  --orange:     #e85c00;
+  --orange-mid: #ff7320;
+  --orange-lite: #ffaa60;
+
+  /* App chrome — light mode like real NFL scripts */
+  --bg:       #f0f2f5;
+  --surface:  #ffffff;
+  --surface2: #f4f6fa;
+  --surface3: #e8edf5;
+
+  /* Ink */
+  --ink:      #0d1117;
+  --ink2:     #3a4255;
+  --ink3:     #7a8399;
+  --ink4:     #b0b8cc;
+
+  /* Borders — sharp, like printed ruled lines */
+  --rule:     #d0d6e4;
+  --rule2:    #b8c0d4;
+  --rule3:    #9098b0;
+
+  /* Position accent colors — NFL depth-chart feel */
+  --qb:   #1a3fa8; --qb-bg:   #dce6ff;
+  --rb:   #e85c00; --rb-bg:   #ffe8d6;
+  --wr:   #2555d4; --wr-bg:   #dde8ff;
+  --te:   #bf4800; --te-bg:   #ffd9c0;
+  --ol:   #0d2e80; --ol-bg:   #cdd8f8;
+  --dl:   #c74400; --dl-bg:   #ffd0b8;
+  --lb:   #1e4ec8; --lb-bg:   #d8e4ff;
+  --db:   #a83a00; --db-bg:   #ffe0c8;
+  --kp:   #556080; --kp-bg:   #e4e8f4;
+  --st:   #284ea0; --st-bg:   #d8e2f8;
+
+  /* Period stripe colors */
+  --indy:       #1a3fa8; --indy-bg:   #dce6ff; --indy-stripe: #1a3fa8;
+  --combo:      #e85c00; --combo-bg:  #ffe8d6; --combo-stripe: #e85c00;
+  --team:       #0d2e80; --team-bg:   #cdd8f8; --team-stripe:  #0d2e80;
+  --tempo:      #556080; --tempo-bg:  #e8edf5; --tempo-stripe: #7a8399;
+
+  /* Accent */
+  --accent:     #1a3fa8;
+  --accent-dim: rgba(26,63,168,0.08);
+  --accent-hover: #122d80;
+
+  /* Status */
+  --red:    #c0392b; --red-bg:   rgba(192,57,43,0.1);
+  --green:  #1a7a40; --green-bg: rgba(26,122,64,0.1);
+
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-head:    'Inter', sans-serif;
+  --font-body:    'Inter', sans-serif;
+  --font-mono:    'Roboto Mono', monospace;
+
+  --radius: 2px;
+  --radius-lg: 4px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%;
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface2); }
+::-webkit-scrollbar-thumb { background: var(--rule2); border-radius: 2px; }
+
+/* ══════════════════════════════════════════════════════
+   LOGIN SCREEN
+   ══════════════════════════════════════════════════════ */
+#login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 28px;
+  padding: 2rem;
+  background: var(--royal-dark);
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 39px,
+      rgba(255,255,255,0.03) 39px,
+      rgba(255,255,255,0.03) 40px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 39px,
+      rgba(255,255,255,0.03) 39px,
+      rgba(255,255,255,0.03) 40px
+    );
+}
+
+/* Orange top stripe on login */
+#login-screen::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, var(--orange) 0%, var(--orange-mid) 100%);
+}
+
+.login-logo {
+  font-family: var(--font-display);
+  font-size: 52px;
+  letter-spacing: 5px;
+  color: #ffffff;
+  text-align: center;
+  line-height: 1;
+}
+.login-logo span { color: var(--orange-mid); }
+.login-sub {
+  font-family: var(--font-head);
+  font-size: 14px;
+  letter-spacing: .04em;
+  color: rgba(255,255,255,0.45);
+  text-transform: uppercase;
+}
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-width: 600px;
+  width: 100%;
+}
+@media(max-width:480px){ .role-grid { grid-template-columns: repeat(2,1fr); } }
+.role-card {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 0;
+  border-top: 3px solid transparent;
+  padding: 20px 14px;
+  cursor: pointer;
+  transition: all .15s;
+  text-align: center;
+  color: #fff;
+}
+.role-card:hover {
+  background: rgba(255,255,255,0.1);
+  border-top-color: var(--orange-mid);
+}
+.role-card.selected {
+  background: rgba(232,92,0,0.15);
+  border-color: rgba(255,255,255,0.2);
+  border-top-color: var(--orange);
+}
+.role-card-hc {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-top: 4px solid var(--orange);
+  padding: 22px 20px;
+  cursor: pointer;
+  transition: all .15s;
+  text-align: center;
+  color: #fff;
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+.role-card-hc:hover { background: rgba(255,255,255,0.12); }
+.role-card-hc.selected { background: rgba(232,92,0,0.2); border-color: var(--orange); }
+.role-dot { width: 10px; height: 10px; border-radius: 50%; margin: 0 auto 10px; }
+.role-dot-hc { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+.role-name {
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: .05em;
+  color: #fff;
+}
+.role-name-hc {
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: .06em;
+  color: #fff;
+}
+.role-desc { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 4px; font-family: var(--font-head); letter-spacing: .06em; }
+.login-btn {
+  padding: 13px 48px;
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  border-radius: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: .15em;
+  cursor: pointer;
+  opacity: 0.35;
+  transition: all .15s;
+  text-transform: uppercase;
+}
+.login-btn.active { opacity: 1; }
+.login-btn.active:hover { background: var(--orange-mid); }
+
+/* ══════════════════════════════════════════════════════
+   APP SHELL
+   ══════════════════════════════════════════════════════ */
+#app { display: none; height: 100vh; flex-direction: column; }
+#app.visible { display: flex; }
+
+.topbar {
+  height: 48px;
+  background: var(--royal-dark);
+  border-bottom: 3px solid var(--orange);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 14px;
+  flex-shrink: 0;
+}
+.topbar-logo {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 3px;
+  color: #ffffff;
+}
+.topbar-logo span { color: var(--orange-mid); }
+.topbar-day {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.08);
+  padding: 3px 10px;
+  border: 1px solid rgba(255,255,255,0.12);
+  letter-spacing: .02em;
+}
+.topbar-spacer { flex: 1; }
+.live-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #6ee8a0;
+  letter-spacing: .08em;
+}
+.live-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #6ee8a0;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+.presence-avatars { display: flex; }
+.presence-av {
+  width: 28px; height: 28px;
+  border-radius: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 11px;
+  border: 1px solid rgba(255,255,255,0.2);
+  margin-left: -1px;
+  cursor: default;
+  position: relative;
+}
+.presence-av:first-child { margin-left: 0; }
+.presence-av[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: -26px; left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 9px; font-family: var(--font-body);
+  background: var(--ink); color: #fff;
+  padding: 3px 7px;
+  pointer-events: none;
+  z-index: 10;
+}
+.role-badge {
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: .1em;
+  padding: 3px 10px;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.8);
+}
+
+/* Firebase badge */
+#fbStatus {
+  font-size: 9px !important;
+  font-family: var(--font-mono) !important;
+  padding: 3px 8px !important;
+  background: rgba(110,232,160,0.12) !important;
+  color: #6ee8a0 !important;
+  border: 1px solid rgba(110,232,160,0.25) !important;
+  letter-spacing: .06em;
+}
+
+/* ══════════════════════════════════════════════════════
+   MAIN LAYOUT
+   ══════════════════════════════════════════════════════ */
+.main { display: flex; flex: 1; overflow: hidden; }
+
+.sidebar {
+  width: 176px;
+  background: var(--royal-dark);
+  border-right: 3px solid var(--orange);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+.sidebar-section {
+  padding: 14px 12px 5px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: .08em;
+  color: rgba(255,255,255,0.45);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+.sidebar-section:first-child { margin-top: 0; border-top: none; }
+.sidebar-item {
+  padding: 10px 12px;
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255,255,255,0.65);
+  border-left: 3px solid transparent;
+  transition: all .12s;
+}
+.sidebar-item:hover { color: rgba(255,255,255,0.95); background: rgba(255,255,255,0.07); }
+.sidebar-item.active {
+  color: #fff;
+  border-left-color: var(--orange);
+  background: rgba(232,92,0,0.18);
+}
+.day-item {
+  padding: 9px 12px 9px 16px;
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  color: rgba(255,255,255,0.5);
+  transition: all .12s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-left: 3px solid transparent;
+  letter-spacing: 0;
+}
+.day-item:hover { color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.05); }
+.day-item.active { color: #fff; border-left-color: var(--orange-mid); background: rgba(255,255,255,0.05); }
+
+
+/* ══════════════════════════════════════════════════════
+   CONTENT AREA
+   ══════════════════════════════════════════════════════ */
+.content {
+  flex: 1; overflow: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--bg);
+}
+
+.content-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--royal);
+}
+.content-title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  letter-spacing: 2px;
+  color: var(--royal-dark);
+}
+.content-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink3);
+  letter-spacing: .02em;
+  background: var(--surface2);
+  padding: 3px 8px;
+  border: 1px solid var(--rule);
+}
+
+/* ══════════════════════════════════════════════════════
+   STATS BAR — NFL-style scoreboard tiles
+   ══════════════════════════════════════════════════════ */
+.stats-bar { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--rule2); border: 1px solid var(--rule2); }
+@media(max-width:500px){ .stats-bar { grid-template-columns: repeat(2,1fr); } }
+.stat-card {
+  background: var(--surface);
+  padding: 12px 14px;
+  border-top: 3px solid var(--royal);
+}
+.stat-card:nth-child(even) { border-top-color: var(--orange); }
+.stat-label {
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: .12em;
+  color: var(--ink3);
+  margin-bottom: 2px;
+}
+.stat-val {
+  font-family: var(--font-display);
+  font-size: 28px;
+  letter-spacing: 1px;
+  color: var(--ink);
+  line-height: 1;
+}
+.stat-sub { font-size: 10px; color: var(--ink4); margin-top: 2px; font-family: var(--font-body); }
+
+/* ══════════════════════════════════════════════════════
+   SCRIPT TABLE — hard-ruled, NFL ops sheet style
+   ══════════════════════════════════════════════════════ */
+.script-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--rule2);
+  background: var(--surface);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.script-table { width: 100%; border-collapse: collapse; min-width: 900px; }
+.script-table th {
+  background: var(--royal-dark);
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: .14em;
+  color: rgba(255,255,255,0.7);
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 2px solid var(--orange);
+  border-right: 1px solid rgba(255,255,255,0.1);
+  white-space: nowrap;
+}
+.script-table th:last-child { border-right: none; }
+.script-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--rule);
+  border-right: 1px solid var(--rule);
+  vertical-align: middle;
+  font-size: 12px;
+  background: var(--surface);
+}
+.script-table td:last-child { border-right: none; }
+.script-table tr:last-child td { border-bottom: none; }
+.script-table tr:hover td { background: var(--surface2); }
+/* Alternating row tint */
+.script-table tr:nth-child(even) td { background: #fafbfd; }
+.script-table tr:nth-child(even):hover td { background: var(--surface2); }
+
+.time-cell {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+
+/* Period pills — hard rectangular, NFL-ops style */
+.period-pill {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 0;
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: .08em;
+  white-space: nowrap;
+}
+.pill-indy  { background: var(--indy-bg);  color: var(--indy);  border-left: 3px solid var(--indy);  }
+.pill-combo { background: var(--combo-bg); color: var(--combo); border-left: 3px solid var(--combo); }
+.pill-team  { background: var(--team-bg);  color: var(--team);  border-left: 3px solid var(--team);  }
+.pill-tempo { background: var(--tempo-bg); color: var(--tempo-stripe); border-left: 3px solid var(--tempo-stripe); }
+
+/* Drill input — looks like a form field on a printed sheet */
+.drill-input {
+  width: 100%;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 3px 5px;
+  font-size: 11px;
+  color: var(--ink);
+  font-family: var(--font-body);
+  transition: all .1s;
+  min-width: 90px;
+}
+.drill-input:hover { border-color: var(--rule2); background: #f0f4ff; }
+.drill-input:focus { outline: none; border-color: var(--royal-mid); background: #e8f0ff; }
+.drill-input:disabled { color: var(--ink3); cursor: default; }
+.drill-input.peer-editing { border-color: var(--orange); background: rgba(232,92,0,0.04); }
+.drill-input.my-group { color: var(--ink); font-weight: 500; }
+.changed-cell { background: rgba(232,92,0,0.04) !important; }
+
+.cell-multi { display: flex; align-items: center; gap: 5px; }
+.comment-badge {
+  flex-shrink: 0;
+  background: var(--orange);
+  color: #fff;
+  font-size: 9px;
+  padding: 1px 5px;
+  font-family: var(--font-display);
+  letter-spacing: .06em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Position header badges */
+.pos-th { text-align: center !important; }
+.pos-th-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: .06em;
+  border-bottom: 2px solid currentColor;
+}
+
+/* ══════════════════════════════════════════════════════
+   ACTIVITY FEED
+   ══════════════════════════════════════════════════════ */
+.activity-feed {
+  background: var(--surface);
+  border: 1px solid var(--rule2);
+  overflow: hidden;
+}
+.feed-header {
+  padding: 8px 12px;
+  border-bottom: 2px solid var(--royal);
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: .1em;
+  color: var(--royal-dark);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface2);
+}
+.feed-item {
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 11px;
+  animation: slideIn .25s ease;
+}
+.feed-item:last-child { border-bottom: none; }
+@keyframes slideIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:none} }
+.feed-av {
+  width: 22px; height: 22px;
+  border-radius: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700;
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  letter-spacing: .04em;
+}
+.feed-text { flex: 1; color: var(--ink3); line-height: 1.4; }
+.feed-text b { color: var(--ink); }
+.feed-time { font-family: var(--font-mono); font-size: 9px; color: var(--ink4); flex-shrink: 0; }
+
+/* ══════════════════════════════════════════════════════
+   FILTER BAR & PLAYER GRID
+   ══════════════════════════════════════════════════════ */
+.filter-bar { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+.filter-btn {
+  padding: 4px 12px;
+  border-radius: 0;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: .06em;
+  border: 1px solid var(--rule2);
+  background: var(--surface);
+  color: var(--ink3);
+  cursor: pointer;
+  transition: all .1s;
+  border-bottom: 2px solid transparent;
+}
+.filter-btn:hover { color: var(--ink); border-bottom-color: var(--royal-mid); }
+.filter-btn.active {
+  color: var(--royal-dark);
+  background: var(--surface2);
+  border-bottom-color: var(--orange);
+  font-weight: 600;
+}
+
+.player-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+.player-card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-top: 3px solid var(--rule2);
+  padding: 11px 13px;
+  transition: border-top-color .12s;
+}
+.player-card:hover { border-top-color: var(--royal-mid); }
+.pc-header { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.pc-num {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: #000;
+  min-width: 28px;
+  letter-spacing: .04em;
+}
+.pc-name { font-size: 13px; font-weight: 600; flex: 1; color: var(--ink); font-family: var(--font-head); }
+.pc-pos {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: .06em;
+  padding: 1px 6px;
+  border-radius: 0;
+}
+.pc-weak { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 6px; }
+.weak-tag {
+  font-size: 9px; padding: 1px 5px;
+  background: rgba(192,57,43,0.1);
+  color: #c0392b;
+  font-family: var(--font-mono);
+  border-left: 2px solid #c0392b;
+}
+.no-weak { font-size: 10px; color: var(--ink4); font-family: var(--font-mono); }
+.pc-drill {
+  font-size: 10px; color: var(--ink2);
+  padding: 3px 7px;
+  background: var(--surface2);
+  border-left: 3px solid var(--indy);
+  margin-top: 3px;
+  line-height: 1.4;
+  font-family: var(--font-body);
+}
+.pc-drill.focus { border-left-color: var(--orange); color: var(--orange); }
+
+/* ══════════════════════════════════════════════════════
+   SIDELINE VIEW
+   ══════════════════════════════════════════════════════ */
+.mobile-view { max-width: 420px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
+.period-now {
+  background: var(--surface);
+  border: 1px solid var(--rule2);
+  border-top: 4px solid var(--royal);
+  overflow: hidden;
+}
+.period-now-hd {
+  background: var(--royal-dark);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.period-now-label {
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: .1em;
+  color: #fff;
+}
+.period-timer {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--orange-mid);
+}
+.period-now-body { padding: 12px 14px; }
+.period-drill-name {
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: 1px;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.period-drill-desc { font-size: 12px; color: var(--ink3); line-height: 1.5; margin-bottom: 8px; }
+.period-player-notes { display: flex; flex-direction: column; gap: 4px; }
+.player-note {
+  font-size: 11px; padding: 4px 8px;
+  background: rgba(192,57,43,0.07);
+  border-left: 3px solid #c0392b;
+  color: var(--ink2);
+}
+.player-note b { color: var(--ink); }
+
+.period-next {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  padding: 9px 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.period-next-time { font-family: var(--font-mono); font-size: 11px; color: var(--ink3); min-width: 36px; font-weight: 500; }
+.period-next-label { font-size: 11px; color: var(--ink2); flex: 1; }
+.period-next-pill { flex-shrink: 0; }
+
+/* ══════════════════════════════════════════════════════
+   BUTTONS & MISC
+   ══════════════════════════════════════════════════════ */
+.view-tabs {
+  display: flex; gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule2);
+  padding: 1px;
+}
+.view-tab {
+  padding: 5px 12px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: .08em;
+  cursor: pointer;
+  color: var(--ink3);
+  transition: all .1s;
+  border: none;
+  background: var(--surface2);
+}
+.view-tab:hover { color: var(--ink); background: var(--surface); }
+.view-tab.active { background: var(--royal-dark); color: #fff; }
+
+.export-btn {
+  padding: 7px 16px;
+  background: var(--orange);
+  border: none;
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: .1em;
+  cursor: pointer;
+  transition: all .12s;
+}
+.export-btn:hover { background: var(--orange-mid); }
+
+/* Setup guide — orange accent on dark */
+.setup-guide {
+  background: var(--surface);
+  border: 1px solid var(--rule2);
+  border-top: 3px solid var(--orange);
+  padding: 14px 16px;
+}
+.setup-guide-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: .1em;
+  color: var(--orange);
+  margin-bottom: 10px;
+}
+
+/* ══════════════════════════════════════════════════════
+   EDIT ROSTER
+   ══════════════════════════════════════════════════════ */
+.roster-toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.roster-add-btn {
+  padding:8px 18px; background:var(--royal-dark); color:#fff; border:none;
+  font-family:var(--font-display); font-size:14px; letter-spacing:.08em;
+  cursor:pointer; transition:background .12s;
+}
+.roster-add-btn:hover { background:var(--royal-mid); }
+.roster-search {
+  flex:1; min-width:160px; max-width:260px; padding:7px 10px;
+  border:1px solid var(--rule2); background:var(--surface);
+  color:var(--ink); font-family:var(--font-body); font-size:13px;
+}
+.roster-search:focus { outline:none; border-color:var(--royal-mid); }
+.roster-pos-filter { display:flex; gap:4px; flex-wrap:wrap; }
+.roster-table-wrap { overflow-x:auto; border:1px solid var(--rule2); background:var(--surface); }
+.roster-table { width:100%; border-collapse:collapse; min-width:600px; }
+.roster-table th {
+  background:var(--royal-dark); font-family:var(--font-display); font-size:11px;
+  letter-spacing:.12em; color:rgba(255,255,255,0.75); padding:8px 10px; text-align:left;
+  border-bottom:2px solid var(--orange); border-right:1px solid rgba(255,255,255,0.08); white-space:nowrap;
+}
+.roster-table th:last-child { border-right:none; }
+.roster-table td {
+  padding:7px 10px; border-bottom:1px solid var(--rule); border-right:1px solid var(--rule);
+  font-size:12px; vertical-align:middle; background:var(--surface);
+}
+.roster-table td:last-child { border-right:none; }
+.roster-table tr:last-child td { border-bottom:none; }
+.roster-table tr:nth-child(even) td { background:#fafbfd; }
+.roster-table tr:hover td { background:var(--surface2); }
+.pos-tag {
+  display:inline-block; padding:2px 7px; margin:1px;
+  font-family:var(--font-display); font-size:10px; letter-spacing:.04em;
+  background:var(--surface2); color:var(--ink2); border:1px solid var(--rule2);
+}
+.pos-tag-primary { background:var(--royal-dark); color:#fff; border-color:var(--royal-dark); }
+.weak-tag-small {
+  display:inline-block; font-size:9px; padding:2px 6px; margin:1px;
+  background:rgba(168,48,32,0.08); color:#a83020;
+  border:1px solid rgba(168,48,32,0.25); font-family:var(--font-mono);
+}
+.roster-action-btn {
+  padding:3px 10px; font-family:var(--font-display); font-size:11px; letter-spacing:.06em;
+  border:1px solid var(--rule2); background:transparent;
+  color:var(--ink3); cursor:pointer; transition:all .1s; margin-right:4px;
+}
+.roster-action-btn:hover { background:var(--surface2); color:var(--ink); border-color:var(--rule3); }
+.roster-action-btn.delete:hover { background:rgba(168,48,32,0.08); color:#a83020; border-color:rgba(168,48,32,0.4); }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(10,13,20,0.75);
+  display:flex; align-items:center; justify-content:center; z-index:1000; padding:1rem;
+}
+.modal-box {
+  background:var(--surface); border:1px solid var(--rule2);
+  border-top:3px solid var(--royal-dark); width:100%; max-width:580px; max-height:90vh; overflow-y:auto;
+}
+.modal-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 20px; border-bottom:1px solid var(--rule); background:var(--royal-dark);
+}
+.modal-title { font-family:var(--font-display); font-size:18px; letter-spacing:.1em; color:#fff; }
+.modal-close { background:none; border:none; font-size:18px; color:rgba(255,255,255,0.5); cursor:pointer; padding:0 4px; line-height:1; }
+.modal-close:hover { color:#fff; }
+.modal-body { padding:20px; display:flex; flex-direction:column; gap:18px; }
+.modal-footer {
+  padding:14px 20px; border-top:1px solid var(--rule);
+  display:flex; gap:8px; justify-content:flex-end; background:var(--surface2);
+}
+.modal-section { display:flex; flex-direction:column; gap:6px; }
+.field-label {
+  font-family:var(--font-display); font-size:10px; letter-spacing:.14em;
+  color:var(--ink3); display:block; text-transform:uppercase;
+}
+.field-hint { font-size:10px; color:var(--ink4); font-family:var(--font-body); margin-left:8px; font-style:italic; text-transform:none; letter-spacing:0; }
+.field-input {
+  width:100%; padding:9px 11px; border:1px solid var(--rule2); background:var(--surface);
+  color:var(--ink); font-family:var(--font-body); font-size:13px;
+}
+.field-input:focus { outline:none; border-color:var(--royal-mid); background:#f8faff; }
+.field-row { display:grid; grid-template-columns:2fr 1fr; gap:12px; }
+.pos-selector { display:flex; flex-wrap:wrap; gap:5px; }
+.pos-btn {
+  padding:6px 13px; font-family:var(--font-display); font-size:12px; letter-spacing:.06em;
+  border:1px solid var(--rule2); background:var(--surface2);
+  color:var(--ink2); cursor:pointer; transition:all .1s; min-width:44px; text-align:center;
+}
+.pos-btn:hover { border-color:var(--royal-mid); color:var(--royal-mid); background:var(--surface); }
+.pos-btn.selected-primary { background:var(--royal-dark) !important; color:#fff !important; border-color:var(--royal-dark) !important; }
+.pos-btn.selected-secondary { background:var(--surface) !important; color:var(--royal-mid) !important; border-color:var(--royal-mid) !important; border-width:2px !important; }
+.skills-grid { display:flex; flex-wrap:wrap; gap:5px; }
+.skill-btn {
+  padding:5px 11px; font-size:11px; font-family:var(--font-body);
+  border:1px solid var(--rule2); background:var(--surface2);
+  color:var(--ink2); cursor:pointer; transition:all .1s;
+}
+.skill-btn:hover { border-color:var(--rule3); color:var(--ink); background:var(--surface); }
+.skill-btn.weak { background:rgba(168,48,32,0.08); color:#a83020; border-color:rgba(168,48,32,0.35); font-weight:500; }
+.save-btn {
+  padding:9px 28px; background:var(--royal-dark); color:#fff; border:none;
+  font-family:var(--font-display); font-size:14px; letter-spacing:.1em; cursor:pointer; transition:background .12s;
+}
+.save-btn:hover { background:var(--royal-mid); }
+.cancel-btn {
+  padding:9px 18px; background:transparent; color:var(--ink3); border:1px solid var(--rule2);
+  font-family:var(--font-display); font-size:14px; letter-spacing:.06em; cursor:pointer; transition:all .12s;
+}
+.cancel-btn:hover { background:var(--surface2); color:var(--ink); }
+
+/* ── SCHEDULE EDITOR ── */
+.sched-table-wrap { border:1px solid var(--rule2); background:var(--surface); overflow:hidden; max-height:60vh; overflow-y:auto; }
+.sched-table { width:100%; border-collapse:collapse; }
+.sched-table th {
+  background:var(--royal-dark); font-family:var(--font-display); font-size:10px;
+  letter-spacing:.12em; color:rgba(255,255,255,0.75); padding:8px 12px; text-align:left;
+  border-bottom:2px solid var(--orange); border-right:1px solid rgba(255,255,255,0.08);
+  position:sticky; top:0; z-index:1;
+}
+.sched-table th:last-child { border-right:none; }
+.sched-table td {
+  padding:6px 10px; border-bottom:1px solid var(--rule); border-right:1px solid var(--rule);
+  vertical-align:middle; background:var(--surface);
+}
+.sched-table td:last-child { border-right:none; }
+.sched-table tr:last-child td { border-bottom:none; }
+.sched-table tr:nth-child(even) td { background:#fafbfd; }
+.sched-table tr:hover td { background:var(--surface2); }
+.sched-input {
+  width:100%; padding:5px 8px; border:1px solid transparent;
+  background:transparent; color:var(--ink); font-family:var(--font-mono); font-size:12px;
+  transition:all .1s;
+}
+.sched-input:hover { border-color:var(--rule2); background:var(--surface); }
+.sched-input:focus { outline:none; border-color:var(--royal-mid); background:#f0f5ff; }
+.sched-input.name-input { font-family:var(--font-body); font-size:12px; }
+.type-select {
+  padding:4px 8px; border:1px solid var(--rule2); background:var(--surface2);
+  color:var(--ink); font-family:var(--font-display); font-size:11px; letter-spacing:.04em; cursor:pointer;
+}
+.type-select:focus { outline:none; border-color:var(--royal-mid); }
+.dur-badge {
+  display:inline-block; padding:2px 8px; font-family:var(--font-mono); font-size:11px;
+  background:var(--surface2); color:var(--ink3); border:1px solid var(--rule);
+}
+.sched-add-btn {
+  padding:8px 18px; background:var(--royal-dark); color:#fff; border:none;
+  font-family:var(--font-display); font-size:13px; letter-spacing:.08em;
+  cursor:pointer; transition:background .12s;
+}
+.sched-add-btn:hover { background:var(--royal-mid); }
+.sched-del-btn {
+  padding:3px 10px; font-family:var(--font-display); font-size:11px; letter-spacing:.06em;
+  border:1px solid var(--rule2); background:transparent; color:var(--ink3); cursor:pointer; transition:all .1s;
+}
+.sched-del-btn:hover { background:rgba(168,48,32,0.08); color:#a83020; border-color:rgba(168,48,32,0.4); }
+.sched-move-btn {
+  padding:2px 8px; font-size:13px; border:1px solid var(--rule2); background:transparent;
+  color:var(--ink3); cursor:pointer; margin:0 1px; transition:all .1s;
+}
+.sched-move-btn:hover { background:var(--surface2); color:var(--ink); }
+.sched-save-bar {
+  display:flex; align-items:center; gap:10px; padding:10px 14px;
+  background:var(--surface2); border:1px solid var(--rule2); border-top:none;
+}
+.sched-save-btn {
+  padding:7px 20px; background:var(--orange); color:#fff; border:none;
+  font-family:var(--font-display); font-size:13px; letter-spacing:.08em;
+  cursor:pointer; transition:background .12s;
+}
+.sched-save-btn:hover { background:var(--orange-mid); }
+.sched-note { font-size:11px; color:var(--ink3); font-family:var(--font-body); }
+
+.hidden { display: none !important; }
+</style>
+<!-- Firebase compat SDK — loads synchronously, no CORS issues -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script>
+// Pre-wire Firebase compat so the main script can use it
+(function() {
+  window._fbConfigured = false;
+})();
+</script>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div id="login-screen">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+    <div class="login-logo" style="margin-top:4px">WHITELAND <span>FOOTBALL</span></div>
+    <div class="login-sub" style="text-align:center;font-size:16px;color:#ffffff;letter-spacing:.08em">COACHING STAFF PRACTICE SCRIPT</div>
+  </div>
+  <div style="width:100%;max-width:600px;display:flex;flex-direction:column;gap:10px">
+    <div id="hcGrid"></div>
+    <div style="height:1px;background:rgba(255,255,255,0.12);position:relative">
+      <span style="position:absolute;left:50%;transform:translateX(-50%) translateY(-50%);background:var(--royal-dark);padding:0 12px;font-family:var(--font-head);font-size:10px;letter-spacing:.14em;color:rgba(255,255,255,0.3)">POSITION COACHES</span>
+    </div>
+    <div class="role-grid" id="roleGrid"></div>
+  </div>
+  <button class="login-btn" id="loginBtn" onclick="window.doLogin()">LOGIN</button>
+</div>
+
+<!-- ── APP ── -->
+<div id="app">
+  <div class="topbar">
+    <span class="topbar-logo">WW <span style="color:var(--orange-mid)">FOOTBALL</span></span>
+    <span class="topbar-day" id="topbarDay">MONDAY</span>
+    <span class="topbar-spacer"></span>
+    <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+  <div id="fbStatus" style="font-size:10px;font-family:var(--font-mono);padding:3px 8px;border-radius:20px;background:rgba(76,175,125,0.12);color:var(--rb);border:1px solid rgba(76,175,125,0.25);display:none">FIREBASE SYNCING</div>
+    <div class="presence-avatars" id="presenceAvatars"></div>
+    <span class="role-badge" id="roleBadge"></span>
+    <button onclick="window.doLogout()" style="padding:4px 10px;background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.45);font-family:var(--font-display);font-size:12px;letter-spacing:.08em;cursor:pointer;transition:all .12s" onmouseover="this.style.color='#fff';this.style.borderColor='rgba(255,255,255,0.5)'" onmouseout="this.style.color='rgba(255,255,255,0.45)';this.style.borderColor='rgba(255,255,255,0.2)'">&#8592; SWITCH ROLE</button>
+  </div>
+  <div class="main">
+    <div class="sidebar">
+      <div class="sidebar-section">Views</div>
+      <div class="sidebar-item active" onclick="window.setView('script')" id="nav-script">
+        Practice Script
+      </div>
+      <div class="sidebar-item" onclick="window.setView('mygroup')" id="nav-mygroup">
+        My Group
+      </div>
+      <div class="sidebar-item" onclick="window.setView('players')" id="nav-players">
+        Roster
+      </div>
+      <div class="sidebar-item" onclick="window.setView('sideline')" id="nav-sideline">
+        Sideline
+      </div>
+      <div id="nav-roster-placeholder"></div>
+      <div id="nav-schedule-placeholder"></div>
+      <div class="sidebar-section">Day</div>
+      <div class="day-item active" onclick="window.setDay('Mon',this)">Monday</div>
+      <div class="day-item" onclick="window.setDay('Tue',this)">Tuesday</div>
+      <div class="day-item" onclick="window.setDay('Wed',this)">Wednesday</div>
+      <div class="day-item" onclick="window.setDay('Thu',this)">Thursday</div>
+      <div class="day-item" onclick="window.setDay('Fri',this)">Friday</div>
+      <div class="day-item" onclick="window.setDay('Sat',this)">Saturday</div>
+      <div class="day-item" onclick="window.setDay('Sun',this)">Sunday</div>
+      <div class="sidebar-section">Export</div>
+      <div class="sidebar-item" onclick="alert('In the full app this exports coach cards PDF')">
+        Print Cards
+      </div>
+    </div>
+    <div class="content" id="mainContent"></div>
+  </div>
+</div>
+
+<script>
+
+// Firebase loaded via script tags in <head>
+// If unavailable, stubs below are used
+let initializeApp = ()=>{};
+let getDatabase   = ()=>null;
+let ref=()=>{}, set=()=>Promise.resolve(), update=()=>Promise.resolve(), push=()=>Promise.resolve();
+let onValue=()=>{}, remove=()=>Promise.resolve(), get=()=>Promise.resolve({exists:()=>false,val:()=>null});
+
+// Wire up real Firebase if the SDK loaded
+if (typeof firebase !== 'undefined') {
+  try {
+    initializeApp = firebase.initializeApp.bind(firebase);
+    getDatabase   = firebase.database ? ()=>firebase.database() : ()=>null;
+  } catch(e) {}
+}
+if (window._fbApp) {
+  try {
+    const db2 = window._firebaseDb;
+    if (db2) {
+      ref    = (db,p)=>db2.ref(p);
+      set    = (r,v)=>r.set(v);
+      update = (r,v)=>r.update(v);
+      push   = (r,v)=>r.push(v);
+      remove = (r)=>r.remove();
+      get    = (r)=>r.once('value');
+      onValue= (r,cb)=>r.on('value', snap=>cb(snap.val()));
+    }
+  } catch(e) {}
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// FIREBASE CONFIGURATION
+// ────────────────────────────────────────────────────────────────────────────
+// SETUP INSTRUCTIONS (5 minutes):
+//   1. Go to https://console.firebase.google.com
+//   2. Click "Add project" → name it "warriors-practice" → Continue
+//   3. Disable Google Analytics → Create project
+//   4. Click "Realtime Database" in the left sidebar → Create database
+//   5. Choose "Start in test mode" → Enable
+//   6. Click the gear icon → Project settings → scroll to "Your apps"
+//   7. Click the </> (web) icon → Register app → name it "warriors-practice"
+//   8. Copy the firebaseConfig object shown and paste it below
+//   9. Upload this HTML file to https://app.netlify.com/drop
+//  10. Share the Netlify URL with your coaching staff — done!
+// ════════════════════════════════════════════════════════════════════════════
+
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyC1NtuMtSvVbWXmn3WUHpqje3Xwnlhh1SI",
+  authDomain:        "wchs-football-playscript.firebaseapp.com",
+  databaseURL:       "https://wchs-football-playscript-default-rtdb.firebaseio.com",
+  projectId:         "wchs-football-playscript",
+  storageBucket:     "wchs-football-playscript.firebasestorage.app",
+  messagingSenderId: "672492232046",
+  appId:             "1:672492232046:web:4d8886152acb42b2b4357f"
+};
+
+// Detect whether Firebase is configured or we're running in demo mode
+const FIREBASE_READY = FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY";
+let db = null;
+
+if (FIREBASE_READY) {
+  try {
+    const app = firebase.initializeApp(FIREBASE_CONFIG);
+    const dbInst = firebase.database(app);
+    window._firebaseDb = dbInst;
+    // Wire up modular-style helpers using compat SDK
+    ref    = (db, p) => dbInst.ref(p);
+    set    = (r, v) => r.set(v);
+    update = (r, v) => r.update(v);
+    push   = (r, v) => r.push(v);
+    remove = (r)    => r.remove();
+    get    = (r)    => r.once('value').then(snap => ({ exists: ()=>snap.exists(), val: ()=>snap.val() }));
+    onValue= (r, cb)=> r.on('value', snap => cb(snap.val()));
+    db = dbInst;
+    console.log("Firebase compat initialized");
+  } catch(e) {
+    console.log("Firebase init error:", e.message);
+  }
+} else {
+  console.log("Warriors PlayScript: running in demo mode");
+}
+
+// ── Firebase helpers ────────────────────────────────────────────────────────
+// All paths live under /playscript/ so the database stays tidy
+// if you reuse a Firebase project for other things.
+
+function fbSet(path, value) {
+  if (!db) return Promise.resolve();
+  return set(ref(db, 'playscript/' + path), value);
+}
+function fbUpdate(path, value) {
+  if (!db) return Promise.resolve();
+  return update(ref(db, 'playscript/' + path), value);
+}
+function fbPush(path, value) {
+  if (!db) return Promise.resolve();
+  return push(ref(db, 'playscript/' + path), value);
+}
+function fbOn(path, event, cb) {
+  if (!db) return;
+  onValue(ref(db, 'playscript/' + path), snap => cb(snap.val()));
+}
+function fbOnce(path, cb) {
+  if (!db) return;
+  get(ref(db, 'playscript/' + path)).then(snap => cb(snap.val()));
+}
+function fbRemove(path) {
+  if (!db) return;
+  remove(ref(db, 'playscript/' + path));
+}
+// Presence: mark user online, auto-remove on disconnect
+function fbPresence(roleId, roleName, color) {
+  if (!db) return;
+  const presRef = ref(db, 'playscript/presence/' + roleId);
+  set(presRef, { id: roleId, name: roleName, color, online: true, ts: Date.now() });
+  // onDisconnect is not available in modular SDK the same way — use remove on beforeunload instead
+  window.addEventListener('beforeunload', () => remove(presRef));
+}
+
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const ROLES = [
+  {id:'HC', label:'Head Coach', desc:'Full edit access', color:'#ffffff'},
+  {id:'QB', label:'QB Coach',   desc:'QB group',         color:'#4f82f7'},
+  {id:'RB', label:'RB Coach',   desc:'RB group',         color:'#f56a00'},
+  {id:'WR', label:'WR Coach',   desc:'WR group',         color:'#7aa8ff'},
+  {id:'TE', label:'TE Coach',   desc:'TE group',         color:'#ff7e20'},
+  {id:'OL', label:'OL Coach',   desc:'OL group',         color:'#a0c0ff'},
+  {id:'DL', label:'DL Coach',   desc:'DL group',         color:'#ffaa60'},
+  {id:'LB', label:'LB Coach',   desc:'LB group',         color:'#7aa8ff'},
+  {id:'DB', label:'DB Coach',   desc:'DB group',         color:'#e8a030'},
+  {id:'ST', label:'ST Coach',   desc:'ST / K/P groups',  color:'#80a8e8'},
+];
+
+const POS_LIST = ['QB','RB','WR','TE','OL','DL','LB','DB','K/P','ST'];
+const POS_COLOR = {QB:'var(--qb)',RB:'var(--rb)',WR:'var(--wr)',TE:'var(--te)',OL:'var(--ol)',DL:'var(--dl)',LB:'var(--lb)',DB:'var(--db)','K/P':'var(--kp)',ST:'var(--st)'};
+const POS_BG    = {QB:'var(--qb-bg)',RB:'var(--rb-bg)',WR:'var(--wr-bg)',TE:'var(--te-bg)',OL:'var(--ol-bg)',DL:'var(--dl-bg)',LB:'var(--lb-bg)',DB:'var(--db-bg)','K/P':'var(--kp-bg)',ST:'var(--st-bg)'};
+
+let SCHEDULE = [
+  {start:'3:30',end:'3:40',period:'Stretch / warmup',       type:'tempo'},
+  {start:'3:40',end:'3:47',period:'Indy — fundamentals',    type:'indy'},
+  {start:'3:47',end:'3:54',period:'Indy — weak focus',      type:'indy'},
+  {start:'3:54',end:'4:04',period:'Combo groups',           type:'combo'},
+  {start:'4:04',end:'4:16',period:'7-on-7 / 9-on-7',        type:'combo'},
+  {start:'4:16',end:'4:28',period:'Team offense',           type:'team'},
+  {start:'4:28',end:'4:40',period:'Team defense',           type:'team'},
+  {start:'4:40',end:'4:48',period:'Special teams',          type:'team'},
+  {start:'4:48',end:'5:00',period:'Conditioning',           type:'tempo'},
+];
+
+const DRILLS_BY_DAY = {
+  Mon:{QB:['3/5/7-step drops','Clock pocket drill'],RB:['Ball security gauntlet','Vision cone drills'],WR:['Release vs press','Footfire & hip sink'],TE:['In-line block stance','Release vs LB'],OL:['Stance & first step','Pass set kick slide'],DL:['First step get-off','Hand fight swim & rip'],LB:['Key & read flow','Sideline-to-sideline'],DB:['Backpedal W-drill','Hip flip plant & drive'],'K/P':['Approach & plant','Contact point tee'],ST:['Coverage lanes','Punt return catch & go']},
+  Tue:{QB:['Rhythm 7s','Grid route throws'],RB:['Pass pro fit','Blitz pickup reads'],WR:['Route running crisp breaks','Contested catch'],TE:['Seam route timing','Red zone catch'],OL:['Hand placement punch','Run blocking drive'],DL:['Gap responsibility','Pursuit angles cone'],LB:['Pass drops hook/curl','Block destruction'],DB:['Zone coverage eyes','Ball skills pick drill'],'K/P':['Contact point work','Hang time punt'],ST:['Return blocking wedge','Kickoff approach']},
+  Wed:{QB:['Compressed window throws','Footwork under pressure'],RB:['Route running flats','Contact balance pad'],WR:['Go route step-into-it','Body control back shoulder'],TE:['Combo block double team','Pass pro chip & release'],OL:['Pulling technique trap','Combo blocks'],DL:['Pass rush spin & bull','Stunts & twists timing'],LB:['Blitz technique run-thru','Run fits gap assignments'],DB:['Man coverage trail mirror','Contested catch defense'],'K/P':['Direction hash work','Punting form steps'],ST:['Punt return vision','Coverage fits alignment']},
+  Thu:{QB:['Towel drill deep ball','Step-into-it go routes'],RB:['Burst through gap drills','Contact balance'],WR:['YAC open field drills','High point contested'],TE:['Dig & cross route','Seam over top'],OL:['Pass pro mirror drill','Footwork lateral shuffle'],DL:['Tackling form & wrap','Pad level leverage'],LB:['Tackling in traffic','Coverage vs TE trail'],DB:['Angle tackle drill','Press technique jam'],'K/P':['Pressure kicks rush sim','Snapper timing'],ST:['Wedge setting timing','Fake awareness reads']},
+  Fri:{QB:['2-min drill walkthrough','RPO reads'],RB:['Red zone role reps','Film reads'],WR:['Route tree walkthrough','Blocking stalk & crack'],TE:['Dual role reads film','Coverage keys'],OL:['Base run install','Stunt recognition film'],DL:['Stunt packages film','OL tendencies'],LB:['Blitz packages walkthrough','Formation recognition'],DB:['Coverage shells walkthrough','Route recognition'],'K/P':['Situational kicks','Coverage alignment'],ST:['Special teams units','Return tendencies film']},
+};
+
+// Generate 100 players
+const FIRST=['Marcus','DeShawn','Tyler','Jordan','Cameron','Malik','Justin','Brandon','Elijah','Trevor','Isaiah','Jaylen','Nathan','Darius','Connor','Terrell','Logan','Andre','Kyle','Devon','Zach','Kendall','Ryan','Damien','Luke','Jalen','Owen','Quinton','Blake','Tanner','Caleb','Micah','Hunter','Dorian','Preston','Jamal','Cole','Miles','Aiden','Victor','Devin','Seth','Rodney','Brayden','Chris','Nate','Deon','Garrett','Xavier','Lamar'];
+const LAST=['Williams','Johnson','Smith','Brown','Davis','Wilson','Moore','Taylor','Anderson','Thomas','Jackson','White','Harris','Martin','Thompson','Garcia','Martinez','Lee','Robinson','Clark','Rodriguez','Lewis','Walker','Hall','Allen','Young','Hernandez','King','Wright','Lopez','Hill','Scott','Green','Adams','Baker','Nelson','Carter','Mitchell','Perez','Roberts','Turner','Phillips','Campbell','Parker','Evans','Edwards','Collins','Stewart','Sanchez','Morris'];
+const POS_SKILLS={QB:['footwork','drop mechanics','pocket presence','reading defenses','short passing','intermediate passing','deep ball','RPO reads'],RB:['ball security','vision & burst','pass blocking','receiving','route running','blitz pickup','contact balance'],WR:['route running','releases','hand catching','YAC','blocking','go routes','body control','contested catches'],TE:['blocking technique','release vs LB','route running','hand catching','seam routes','red zone'],OL:['stance & start','pass protection','run blocking','footwork','combo blocks','pulling technique','hand placement'],DL:['first step quickness','hand fighting','gap responsibility','pass rush moves','pursuit angles','tackling','stunts'],LB:['key & read','pass drops','blitz technique','tackling','pursuit','coverage vs TE','sideline speed'],DB:['backpedal','hip flip','zone coverage','man coverage','press technique','ball skills','tackling in space'],'K/P':['approach & plant','contact point','hang time','direction','kickoff depth','punting form','snapper timing'],ST:['coverage lanes','gunner technique','return blocking','kickoff approach','punt return vision','wedge setting']};
+const POS_COUNTS={QB:4,RB:8,WR:14,TE:5,OL:15,DL:12,LB:14,DB:18,'K/P':4,ST:6};
+
+let rng=42; function rand(){rng=(rng*1664525+1013904223)&0xffffffff;return(rng>>>0)/0xffffffff;}
+function rndArr(a){return a[Math.floor(rand()*a.length)];}
+
+const PLAYERS=[];
+let pnum=1;
+POS_LIST.forEach(pos=>{
+  const count=POS_COUNTS[pos]||4;
+  const skills=POS_SKILLS[pos]||[];
+  for(let i=0;i<count;i++){
+    const weak=skills.filter(()=>rand()<0.35);
+    PLAYERS.push({id:'p_'+pnum, num:pnum++,name:`${rndArr(FIRST)} ${rndArr(LAST)}`,pos,weak,good:skills.filter(s=>!weak.includes(s))});
+  }
+});
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+var currentRole='';
+var currentView='script';
+var currentDay='Mon';
+var selectedRoleId=null;
+var sidelineTimer=null;
+var sidelinePeriod=1;
+
+// Script data: day -> period index -> pos -> drill
+const scriptData={};
+['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(day=>{
+  scriptData[day]={};
+  SCHEDULE.forEach((row,ri)=>{
+    scriptData[day][ri]={};
+    POS_LIST.forEach(pos=>{
+      const d=DRILLS_BY_DAY[day]&&DRILLS_BY_DAY[day][pos];
+      if(row.type==='indy'){
+        const isWeak=row.period.includes('weak');
+        scriptData[day][ri][pos]=d?(isWeak?d[1]:d[0]):'Full team';
+      } else if(row.type==='combo'){
+        if(['QB','RB','WR','TE'].includes(pos)) scriptData[day][ri][pos]='Combo — offense';
+        else if(pos==='OL') scriptData[day][ri][pos]='OL vs DL';
+        else if(pos==='DL') scriptData[day][ri][pos]='DL vs OL';
+        else if(['LB','DB'].includes(pos)) scriptData[day][ri][pos]='7-on-7 coverage';
+        else scriptData[day][ri][pos]='ST / film';
+      } else if(row.type==='team'){
+        if(row.period.includes('offense')) scriptData[day][ri][pos]=['QB','RB','WR','TE','OL'].includes(pos)?'11-on-11 reps':'Scout / film';
+        else if(row.period.includes('defense')) scriptData[day][ri][pos]=['DL','LB','DB'].includes(pos)?'11-on-11 reps':'Scout / film';
+        else if(row.period.includes('Special')) scriptData[day][ri][pos]='ST units';
+        else scriptData[day][ri][pos]='Full team';
+      } else {
+        scriptData[day][ri][pos]='Full team';
+      }
+    });
+  });
+});
+
+const activityLog=[];
+const PEER_COACHES=[
+  {id:'OL',name:'OL Coach',color:'#a0c0ff'},
+  {id:'DB',name:'DB Coach',color:'#e8a030'},
+  {id:'LB',name:'LB Coach',color:'#7aa8ff'},
+  {id:'WR',name:'WR Coach',color:'#7aa8ff'},
+  {id:'DL',name:'DL Coach',color:'#ffaa60'},
+];
+
+// ── ACTIVITY ───────────────────────────────────────────────────────────────
+function pushActivity(coach, text, color, roleId) {
+  const now = new Date();
+  const entry = {
+    coach, text, color,
+    roleId: roleId || currentRole,
+    time: `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`
+  };
+  // Always add to local log immediately
+  activityLog.unshift(entry);
+  if (activityLog.length > 8) activityLog.pop();
+  const feed = document.getElementById('activityFeed');
+  if (feed) renderFeed(feed);
+  // Push to Firebase so other coaches see it
+  if (FIREBASE_READY) {
+    fbPush('activity', entry);
+    // Trim old entries (keep last 50) — lightweight cleanup
+    get(ref(db, 'playscript/activity')).then(snap => {
+      const keys = snap.val() ? Object.keys(snap.val()) : [];
+      if (keys.length > 50) {
+        keys.slice(0, keys.length - 50).forEach(k =>
+          remove(ref(db, 'playscript/activity/' + k))
+        );
+      }
+    });
+  }
+}
+
+// Keep old name working for any internal calls
+function addActivity(coach, text, color) {
+  pushActivity(coach, text, color, currentRole);
+}
+
+// ── LOGIN ──────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  const hcGrid = document.getElementById('hcGrid');
+  const grid = document.getElementById('roleGrid');
+
+  ROLES.forEach(r => {
+    if (r.id === 'HC') {
+      // Full-width head coach tile
+      const card = document.createElement('div');
+      card.className = 'role-card-hc';
+      card.innerHTML = `<div class="role-name-hc">${r.label}</div>`;
+      card.onclick = () => {
+        document.querySelectorAll('.role-card, .role-card-hc').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedRoleId = r.id;
+        document.getElementById('loginBtn').classList.add('active');
+      };
+      hcGrid.appendChild(card);
+    } else {
+      // 3x3 position coach tiles
+      const card = document.createElement('div');
+      card.className = 'role-card';
+      card.innerHTML = `<div class="role-name">${r.label}</div>`;
+      card.onclick = () => {
+        document.querySelectorAll('.role-card, .role-card-hc').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedRoleId = r.id;
+        document.getElementById('loginBtn').classList.add('active');
+      };
+      grid.appendChild(card);
+    }
+  });
+});
+
+function doLogout(){
+  if(db) remove(ref(db, 'playscript/presence/'+currentRole));
+  if(sidelineTimer) clearInterval(sidelineTimer);
+  selectedRoleId=null;
+  currentRole='';
+  currentView='script';
+  // Revert injected HC nav items back to placeholders for next login
+  const rn = document.getElementById('nav-roster');
+  if (rn) rn.outerHTML = '<div id="nav-roster-placeholder"></div>';
+  const sn = document.getElementById('nav-schedule');
+  if (sn) sn.outerHTML = '<div id="nav-schedule-placeholder"></div>';
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('login-screen').style.display='flex';
+  document.querySelectorAll('.role-card, .role-card-hc').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('loginBtn').classList.remove('active');
+}
+
+function doLogin(){
+  if(!selectedRoleId) return;
+  currentRole=selectedRoleId;
+  document.getElementById('login-screen').style.display='none';
+  const app=document.getElementById('app');
+  app.classList.add('visible');
+  const r=ROLES.find(x=>x.id===selectedRoleId);
+  const badge=document.getElementById('roleBadge');
+  badge.textContent=r.label;
+  badge.style.color='#ffffff';
+  badge.style.borderColor='rgba(255,255,255,0.25)';
+  badge.style.borderLeftColor=r.color;
+  badge.style.borderLeftWidth='3px';
+
+  // ── Firebase: announce presence ──────────────────────────────────────────
+  fbPresence(r.id, r.label, r.color);
+
+  // ── Firebase: listen for presence changes from all coaches ───────────────
+  fbOn('presence', 'value', (data) => {
+    onlineCoaches = data ? Object.values(data) : [];
+    renderPresence();
+  });
+
+  // ── Firebase: listen for drill edits from other coaches ──────────────────
+  fbOn('script', 'value', (data) => {
+    if (!data) return;
+    // Merge remote data into local scriptData
+    Object.entries(data).forEach(([day, periods]) => {
+      if (!scriptData[day]) return;
+      Object.entries(periods).forEach(([ri, posMap]) => {
+        if (!scriptData[day][ri]) return;
+        Object.entries(posMap).forEach(([pos, val]) => {
+          if (scriptData[day][ri][pos] !== val) {
+            scriptData[day][ri][pos] = val;
+            // Only re-render if we're currently viewing that day/script
+            if (currentView === 'script' && currentDay === day) {
+              render();
+            }
+          }
+        });
+      });
+    });
+  });
+
+  // ── Firebase: listen for activity feed entries ───────────────────────────
+  fbOn('activity', 'child_added', (item) => {
+    if (!item) return;
+    // Don't duplicate our own entries (already in local log)
+    if (item.roleId === currentRole) return;
+    activityLog.unshift(item);
+    if (activityLog.length > 8) activityLog.pop();
+    const feed = document.getElementById('activityFeed');
+    if (feed) renderFeed(feed);
+  });
+
+  // ── Push our join event ──────────────────────────────────────────────────
+  pushActivity(r.label, 'joined the session', r.color, r.id);
+
+  // ── Seed Firebase with default script data if nothing exists yet ─────────
+  if (FIREBASE_READY) {
+    get(ref(db, 'playscript/script')).then(snap => {
+      if (!snap.exists()) {
+        set(ref(db, 'playscript/script'), scriptData);
+      }
+    });
+    // Load saved schedule if one exists
+    get(ref(db, 'playscript/schedule')).then(snap => {
+      if (snap.exists() && Array.isArray(snap.val())) {
+        SCHEDULE.length = 0;
+        snap.val().forEach(s => SCHEDULE.push(s));
+        if (currentView === 'script') render();
+      }
+    });
+    initRoster();
+  }
+
+  // Show Firebase sync badge if configured
+  if (FIREBASE_READY) {
+    const badge = document.getElementById('fbStatus');
+    if (badge) badge.style.display = 'block';
+  }
+
+  renderPresence();
+
+  // Build HC-only nav items directly in the DOM
+  if (currentRole === 'HC') {
+    const rp = document.getElementById('nav-roster-placeholder');
+    const sp = document.getElementById('nav-schedule-placeholder');
+    if (rp) rp.outerHTML = '<div class="sidebar-item" onclick="window.setView(\'roster\')" id="nav-roster">Edit Roster</div>';
+    if (sp) sp.outerHTML = '<div class="sidebar-item" onclick="window.setView(\'schedule\')" id="nav-schedule">Edit Schedule</div>';
+  }
+  setView('script');
+  if (!FIREBASE_READY) startPeerActivity();
+}
+
+// Track online coaches from Firebase
+let onlineCoaches = [];
+
+// ── PRESENCE ──────────────────────────────────────────────────────────────
+function renderPresence(){
+  const el=document.getElementById('presenceAvatars');
+  // Use live Firebase presence if available, else fall back to peer list
+  const coaches = FIREBASE_READY
+    ? onlineCoaches.filter(p => p.id !== currentRole).slice(0, 6)
+    : PEER_COACHES.filter(p => p.id !== currentRole).slice(0, 5);
+  el.innerHTML = coaches.map(p =>
+    `<div class="presence-av" style="background:${safeColorBg(p.color)};color:${p.color}" title="${p.name}">${p.id.slice(0,2)}</div>`
+  ).join('');
+  // Update live count
+  const liveCount = document.getElementById('statCoachCount');
+  if (liveCount) liveCount.textContent = coaches.length + 1;
+}
+
+// ── PEER ACTIVITY SIM ──────────────────────────────────────────────────────
+function startPeerActivity(){
+  const changes=[
+    ['OL','var(--ol)','updated 3:47 OL drill to "Pass set kick slide"'],
+    ['DB','var(--db)','left a note on Marcus Williams — watch hip flip on cuts'],
+    ['LB','var(--lb)','changed Tue 3:40 LB drill to "Key & read shuffle"'],
+    ['WR','var(--wr)','added comment: need extra time on go routes this week'],
+    ['DL','var(--dl)','updated 3:54 DL drill to "Pass rush vs OL combo"'],
+    ['OL','var(--ol)','marked 5 OL players for pass protection focus'],
+    ['DB','var(--db)','updated Friday sideline notes for coverage shell'],
+  ];
+  let i=0;
+  setInterval(()=>{
+    const [id,color,text]=changes[i%changes.length];
+    if(id!==currentRole){
+      const name=ROLES.find(r=>r.id===id)?.label||id+' Coach';
+      addActivity(name,text,color);
+    }
+    i++;
+  },8000);
+  setTimeout(()=>{
+    addActivity('OL Coach','joined the session','var(--ol)');
+    setTimeout(()=>addActivity('DB Coach','joined the session','var(--db)'),1200);
+    setTimeout(()=>addActivity('LB Coach','joined the session','var(--lb)'),2400);
+  },500);
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────
+function setView(v){
+  currentView=v;
+  ['script','mygroup','players','sideline','roster','schedule'].forEach(n=>{
+    document.getElementById('nav-'+n)?.classList.toggle('active',n===v);
+  });
+  render();
+}
+function setDay(day,el){
+  currentDay=day;
+  document.querySelectorAll('.day-item').forEach(d=>d.classList.remove('active'));
+  el.classList.add('active');
+  const DAY_NAMES={'Mon':'MONDAY','Tue':'TUESDAY','Wed':'WEDNESDAY','Thu':'THURSDAY','Fri':'FRIDAY','Sat':'SATURDAY','Sun':'SUNDAY'};
+  document.getElementById('topbarDay').textContent=(DAY_NAMES[day]||day);
+  render();
+}
+
+function render(){
+  const el=document.getElementById('mainContent');
+  if(currentView==='script')       renderScript(el);
+  else if(currentView==='mygroup') renderMyGroup(el);
+  else if(currentView==='players') renderPlayers(el);
+  else if(currentView==='sideline') renderSideline(el);
+  else if(currentView==='roster')  renderRosterEditor(el);
+  else if(currentView==='schedule') renderScheduleEditor(el);
+}
+
+// ── PILL HELPER ────────────────────────────────────────────────────────────
+function pill(type){
+  const map={indy:'INDY',combo:'COMBO',team:'TEAM',tempo:'WARMUP'};
+  return `<span class="period-pill pill-${type}">${map[type]||type.toUpperCase()}</span>`;
+}
+
+// ── SCRIPT VIEW ────────────────────────────────────────────────────────────
+function renderScript(el){
+  const isHC=currentRole==='HC';
+  const myPos=currentRole; // for non-HC coaches
+  const day=currentDay;
+
+  // Stats
+  const totalWeak=PLAYERS.filter(p=>p.weak.length>0).length;
+  const stats=`<div class="stats-bar">
+    <div class="stat-card"><div class="stat-label">Players</div><div class="stat-val">100</div><div class="stat-sub">10 position groups</div></div>
+    <div class="stat-card"><div class="stat-label">Periods</div><div class="stat-val">9</div><div class="stat-sub">3:30 – 5:00 PM</div></div>
+    <div class="stat-card"><div class="stat-label">Focus players</div><div class="stat-val">${totalWeak}</div><div class="stat-sub">have weak areas</div></div>
+    <div class="stat-card"><div class="stat-label">Coaches live</div><div class="stat-val" id="statCoachCount">${PEER_COACHES.length+1}</div><div class="stat-sub">editing now</div></div>
+  </div>`;
+
+  // Script table - all position groups, horizontally scrollable
+  const SHOW_POS=POS_LIST;
+  const posHeaders=SHOW_POS.map(pos=>{
+    const c=POS_COLOR[pos]||'var(--ink2)';
+    const bg=POS_BG[pos]||'transparent';
+    return `<th class="pos-th"><span class="pos-th-badge" style="background:${bg};color:${c}">${pos}</span></th>`;
+  }).join('');
+
+  const rows=SCHEDULE.map((row,ri)=>{
+    const cells=SHOW_POS.map(pos=>{
+      const val=scriptData[day][ri][pos]||'—';
+      const canEdit=isHC||(pos===myPos&&row.type==='indy');
+      const isPeer=!canEdit&&pos==='OL'&&ri===2;
+      return `<td><div class="cell-multi"><input class="drill-input${canEdit?' my-group':''}${isPeer?' peer-editing':''}" value="${val}" ${canEdit?'':'disabled'} onchange="window.updateDrill('${day}',${ri},'${pos}',this.value)"></div></td>`;
+    }).join('');
+    const hasComment=ri===2;
+    return `<tr>
+      <td class="time-cell">${row.start}</td>
+      <td>${pill(row.type)}</td>
+      <td style="font-size:11px;color:var(--ink2);white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis">${row.period}${hasComment?` <span class="comment-badge" onclick="alert('DB Coach: Need extra time on hip flip this week')">2 notes</span>`:''}</td>
+      ${cells}
+    </tr>`;
+  }).join('');
+
+  const table=`<div class="script-wrap">
+    <table class="script-table">
+      <tr><th>Start</th><th>Type</th><th style="min-width:120px">Period</th>${posHeaders}<th></th></tr>
+      ${rows}
+    </table>
+  </div>`;
+
+  // Activity feed
+  const feedItems=activityLog.slice(0,5).map(a=>`
+    <div class="feed-item">
+      <div class="feed-av" style="background:${safeColorBg(a.color)};color:${a.color}">${(a.coach||'').split(' ')[0].slice(0,2).toUpperCase()}</div>
+      <div class="feed-text"><b>${a.coach}</b> ${a.text}</div>
+      <div class="feed-time">${a.time}</div>
+    </div>`).join('') || '<div style="padding:12px 14px;font-size:11px;color:var(--ink3)">No activity yet</div>';
+
+  const feed=`<div class="activity-feed">
+    <div class="feed-header"><div class="live-dot"></div>LIVE ACTIVITY</div>
+    <div id="activityFeed">${feedItems}</div>
+  </div>`;
+
+  // Setup guide (shown only when Firebase not yet configured)
+  const setupGuide = FIREBASE_READY ? '' : `
+    <div class="setup-guide">
+      <div class="setup-guide-title">DEMO MODE — WHITELAND FOOTBALL · ADD FIREBASE FOR LIVE SYNC</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;font-size:11px;color:var(--ink2);line-height:1.7">
+        <div>
+          <div style="font-family:var(--font-mono);color:var(--ink3);font-size:9px;margin-bottom:4px">STEP 1 — CREATE PROJECT (2 min)</div>
+          <div>Go to <span style="color:var(--royal-mid)">console.firebase.google.com</span></div>
+          <div>→ Add project → name it "warriors-practice"</div>
+          <div>→ Disable Analytics → Create project</div>
+          <div>→ Realtime Database → Create database</div>
+          <div>→ Start in <b style="color:var(--ink)">test mode</b> → Enable</div>
+        </div>
+        <div>
+          <div style="font-family:var(--font-mono);color:var(--ink3);font-size:9px;margin-bottom:4px">STEP 2 — GET CONFIG (1 min)</div>
+          <div>→ Gear icon → Project settings</div>
+          <div>→ Scroll to "Your apps" → click &lt;/&gt;</div>
+          <div>→ Register as "warriors-practice"</div>
+          <div>→ Copy the <b style="color:var(--ink)">firebaseConfig</b> object</div>
+          <div>→ Paste it into this file (top of &lt;script&gt;)</div>
+        </div>
+        <div>
+          <div style="font-family:var(--font-mono);color:var(--ink3);font-size:9px;margin-bottom:4px">STEP 3 — DEPLOY (30 sec)</div>
+          <div>→ Save the HTML file</div>
+          <div>→ Go to <span style="color:var(--royal-mid)">app.netlify.com/drop</span></div>
+          <div>→ Drag and drop the file</div>
+          <div>→ Netlify gives you a public URL</div>
+          <div>→ Share it with your coaching staff — <b style="color:var(--ink)">done</b></div>
+        </div>
+      </div>
+    </div>`;
+
+  el.innerHTML=`
+    <div class="content-header">
+      <span class="content-title">PRACTICE SCRIPT</span>
+      <span class="content-meta">${currentDay.toUpperCase()} · 3:30–5:00 PM</span>
+      <div style="flex:1"></div>
+      <button class="export-btn" onclick="alert('Exports coach cards PDF with current edits')">EXPORT PDF</button>
+    </div>
+    ${stats}
+    ${setupGuide}
+    <div style="font-size:11px;color:var(--ink2);font-family:var(--font-mono)">${!isHC?'Your editable indy cells are highlighted in bold':''}</div>
+    ${table}
+    ${feed}`;
+}
+
+function updateDrill(day, ri, pos, val) {
+  scriptData[day][ri][pos] = val;
+  // Push to Firebase so all coaches see the change instantly
+  fbSet(`script/${day}/${ri}/${pos}`, val);
+  const r = ROLES.find(x => x.id === currentRole);
+  addActivity(r?.label || currentRole, `updated ${day} ${SCHEDULE[ri].start} ${pos} drill to "${val}"`, 'var(--royal-mid)');
+}
+
+const COLOR_BG_MAP = {
+  'var(--royal-mid)':'rgba(37,96,232,0.2)','var(--qb)':'rgba(37,96,232,0.2)',
+  'var(--rb)':'rgba(245,106,0,0.2)','var(--ol)':'rgba(26,79,196,0.2)',
+  'var(--dl)':'rgba(255,170,96,0.2)','var(--lb)':'rgba(122,168,255,0.2)',
+  'var(--db)':'rgba(232,160,48,0.2)','var(--wr)':'rgba(79,130,247,0.2)',
+  'var(--te)':'rgba(255,126,32,0.2)','var(--st)':'rgba(51,112,212,0.2)',
+};
+function safeColorBg(c){ return COLOR_BG_MAP[c] || 'rgba(128,128,128,0.2)'; }
+
+function renderFeed(el){
+  el.innerHTML=activityLog.slice(0,5).map(a=>`
+    <div class="feed-item">
+      <div class="feed-av" style="background:${safeColorBg(a.color)};color:${a.color}">${(a.coach||'').split(' ')[0].slice(0,2).toUpperCase()}</div>
+      <div class="feed-text"><b>${a.coach}</b> ${a.text}</div>
+      <div class="feed-time">${a.time}</div>
+    </div>`).join('') || '<div style="padding:12px 14px;font-size:11px;color:var(--ink3)">No activity yet</div>';
+}
+
+// ── MY GROUP VIEW ──────────────────────────────────────────────────────────
+function renderMyGroup(el){
+  const pos=currentRole==='HC'?'QB':currentRole;
+  const myPlayers=PLAYERS.filter(p=>p.pos===pos);
+  const day=currentDay;
+  const d=DRILLS_BY_DAY[day]&&DRILLS_BY_DAY[day][pos];
+
+  const cards=myPlayers.map(p=>{
+    const weakHtml=p.weak.length?p.weak.map(w=>`<span class="weak-tag">${w}</span>`).join(''):`<span class="no-weak">no weak areas flagged</span>`;
+    return `<div class="player-card">
+      <div class="pc-header">
+        <span class="pc-num">#${p.num}</span>
+        <span class="pc-name">${p.name}</span>
+        <span class="pc-pos" style="background:${POS_BG[pos]};color:${POS_COLOR[pos]}">${p.pos}</span>
+      </div>
+      <div class="pc-weak">${weakHtml}</div>
+      ${d?`<div class="pc-drill">${SCHEDULE[1].start} — ${d[0]}</div>`:''}
+      ${d&&p.weak.length?`<div class="pc-drill focus">${SCHEDULE[2].start} — ${d[1]||d[0]} <span style="color:var(--orange);font-size:9px">(focus)</span></div>`:''}
+    </div>`;
+  }).join('');
+
+  const myDrills=d?`
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${d.map((dr,i)=>`<div style="padding:8px 12px;background:var(--surface);border:1px solid var(--rule);font-size:12px">
+        <div style="font-size:9px;color:var(--ink3);font-family:var(--font-mono);margin-bottom:3px">${i===0?'INDY FUNDAMENTALS':'INDY WEAK FOCUS'}</div>
+        <div style="font-weight:500">${dr}</div>
+      </div>`).join('')}
+    </div>`:''
+
+  el.innerHTML=`
+    <div class="content-header">
+      <span class="content-title">MY GROUP — ${pos}</span>
+      <span class="content-meta">${myPlayers.length} PLAYERS · ${currentDay.toUpperCase()}</span>
+    </div>
+    ${myDrills}
+    <div class="player-grid">${cards}</div>`;
+}
+
+// ── PLAYERS VIEW ───────────────────────────────────────────────────────────
+let playerFilter='All';
+function setPlayerFilter(pos) {
+  playerFilter = pos;
+  renderPlayers(document.getElementById('mainContent'));
+}
+function renderPlayers(el){
+  const btns=['All',...POS_LIST].map(p=>`<button class="filter-btn${p===playerFilter?' active':''}" onclick="window.setPlayerFilter('${p}')">${p}</button>`).join('');
+  const shown=playerFilter==='All'?[...PLAYERS]:[...PLAYERS].filter(p=>p.pos===playerFilter);
+  shown.sort((a,b)=>(a.num||0)-(b.num||0));
+
+  const rows=shown.map(p=>{
+    const allPos=[p.primaryPos||p.pos,...(p.secondaryPos||[])].filter(Boolean);
+    const posTags=allPos.map((pos,i)=>
+      '<span style="display:inline-block;padding:1px 7px;margin:1px;font-family:var(--font-display);font-size:10px;letter-spacing:.04em;' +
+      (i===0?'background:var(--royal-dark);color:#fff;':'background:var(--surface2);color:var(--ink2);border:1px solid var(--rule2);') +
+      '">' + pos + '</span>'
+    ).join('');
+    const weakTags=(p.weak||[]).slice(0,5).map(w=>
+      '<span style="display:inline-block;font-size:9px;padding:1px 6px;margin:1px;background:rgba(168,48,32,0.08);color:#a83020;border:1px solid rgba(168,48,32,0.25);font-family:var(--font-mono)">' + w + '</span>'
+    ).join('') + ((p.weak||[]).length>5?'<span style="font-size:9px;color:var(--ink4)"> +' + (p.weak.length-5) + '</span>':'');
+    return '<tr>' +
+      '<td style="font-family:var(--font-mono);font-size:11px;color:#000;white-space:nowrap;text-align:center">' + (p.num||'—') + '</td>' +
+      '<td style="font-weight:500;font-size:12px;white-space:nowrap">' + p.name + '</td>' +
+      '<td style="white-space:nowrap;text-align:center">' + posTags + '</td>' +
+      '<td>' + (weakTags||'<span style="font-size:10px;color:var(--ink4)">—</span>') + '</td>' +
+      '</tr>';
+  }).join('');
+
+  el.innerHTML=`
+    <div class="content-header">
+      <span class="content-title">ROSTER</span>
+      <span class="content-meta">${shown.length} OF ${PLAYERS.length} PLAYERS · ${currentDay.toUpperCase()}</span>
+    </div>
+    <div class="filter-bar">${btns}</div>
+    <div class="roster-table-wrap">
+      <table class="roster-table">
+        <thead><tr>
+          <th style="text-align:center;width:40px">#</th>
+          <th>Name</th>
+          <th style="text-align:center">Position</th>
+          <th>Weak areas</th>
+        </tr></thead>
+        <tbody>${rows||'<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--ink4);font-size:12px">No players found</td></tr>'}</tbody>
+      </table>
+    </div>`;
+}
+
+// ── SIDELINE VIEW ──────────────────────────────────────────────────────────
+let timerSecs=7*60;
+function renderSideline(el){
+  const pos=currentRole==='HC'?'QB':currentRole;
+  const d=DRILLS_BY_DAY[currentDay]&&DRILLS_BY_DAY[currentDay][pos];
+  const myPlayers=PLAYERS.filter(p=>p.pos===pos&&p.weak.length>0).slice(0,3);
+
+  const mins=Math.floor(timerSecs/60);
+  const secs=String(timerSecs%60).padStart(2,'0');
+
+  const upNext=SCHEDULE.slice(2,4).map((row,i)=>`
+    <div class="period-next">
+      <span class="period-next-time">${row.start}</span>
+      <span class="period-next-label">${row.period} — ${scriptData[currentDay][i+2]?.[pos]||'Full team'}</span>
+      <span class="period-next-pill">${pill(row.type)}</span>
+    </div>`).join('');
+
+  const notes=myPlayers.map(p=>`<div class="player-note"><b>${p.name}:</b> watch ${p.weak[0]}</div>`).join('');
+
+  el.innerHTML=`
+    <div class="content-header">
+      <span class="content-title">SIDELINE</span>
+      <span class="content-meta">${pos} COACH · ${currentDay.toUpperCase()}</span>
+    </div>
+    <div class="mobile-view">
+      <div class="period-now">
+        <div class="period-now-hd">
+          <span class="period-now-label">NOW: INDY FUNDAMENTALS · ${SCHEDULE[1].start}</span>
+          <span class="period-timer" id="sidelineTimer">${mins}:${secs}</span>
+        </div>
+        <div class="period-now-body">
+          <div class="period-drill-name">${d?d[0]:'Full team drill'}</div>
+          <div class="period-drill-desc">Run your full group through the drill at full speed. Coaches: do not stop the drill — pull individuals aside between reps.</div>
+          ${notes?`<div style="font-size:10px;color:var(--ink3);font-family:var(--font-mono);margin-bottom:5px;margin-top:8px">WATCH THESE PLAYERS</div><div class="period-player-notes">${notes}</div>`:''}
+        </div>
+      </div>
+      ${upNext}
+      <div style="text-align:center;padding:8px 0;font-size:11px;color:var(--ink3);font-family:var(--font-mono)">Clock manager blows horn at period end · 30-sec transition</div>
+    </div>`;
+
+  if(sidelineTimer) clearInterval(sidelineTimer);
+  sidelineTimer=setInterval(()=>{
+    timerSecs=Math.max(0,timerSecs-1);
+    const t=document.getElementById('sidelineTimer');
+    if(t){const m=Math.floor(timerSecs/60);const s=String(timerSecs%60).padStart(2,'0');t.textContent=`${m}:${s}`;}
+  },1000);
+}
+
+// ── ROSTER EDITOR ─────────────────────────────────────────────────────────
+let rosterSearch = '';
+let rosterPosFilter = 'All';
+let editingPlayerId = null; // null = new player, string = editing existing
+
+// Load roster from Firebase on login, fall back to generated PLAYERS
+function initRoster() {
+  if (!db) return;
+  onValue(ref(db, 'playscript/roster'), snap => {
+    const data = snap.val();
+    if (data) {
+      // Replace PLAYERS array with Firebase data
+      PLAYERS.length = 0;
+      Object.values(data).forEach(p => PLAYERS.push(p));
+    } else {
+      // Seed Firebase with the generated sample players
+      const obj = {};
+      PLAYERS.forEach(p => { obj[p.id] = p; });
+      set(ref(db, 'playscript/roster'), obj);
+    }
+    if (currentView === 'players' || currentView === 'roster') render();
+  });
+}
+
+function savePlayer(player) {
+  if (db) set(ref(db, 'playscript/roster/' + player.id), player);
+  const idx = PLAYERS.findIndex(p => p.id === player.id);
+  if (idx >= 0) PLAYERS[idx] = player;
+  else PLAYERS.push(player);
+}
+
+function deletePlayer(id) {
+  if (db) remove(ref(db, 'playscript/roster/' + id));
+  const idx = PLAYERS.findIndex(p => p.id === id);
+  if (idx >= 0) PLAYERS.splice(idx, 1);
+  render();
+}
+
+function openPlayerModal(playerId) {
+  editingPlayerId = playerId || null;
+  const existing = playerId ? PLAYERS.find(p => p.id === playerId) : null;
+
+  const allPositions = POS_LIST;
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'playerModal';
+
+  const primaryPos   = existing ? (existing.primaryPos || existing.pos || '') : '';
+  const secondaryPos = existing ? (existing.secondaryPos || []) : [];
+  const weakSkills   = existing ? ([...(existing.weak || [])]) : [];
+
+  function posButtons(type) {
+    return allPositions.map(p => {
+      const isPrimary = type === 'primary' && primaryPos === p;
+      const isSec     = type === 'secondary' && secondaryPos.includes(p);
+      const cls = isPrimary ? ' selected-primary' : isSec ? ' selected-secondary' : '';
+      return '<button class="pos-btn' + cls + '" onclick="window.togglePos(\'' + p + '\',\'' + type + '\')">' + p + '</button>';
+    }).join('');
+  }
+
+  modal.innerHTML =
+    '<div class="modal-box">' +
+      '<div class="modal-header">' +
+        '<span class="modal-title">' + (existing ? 'EDIT PLAYER' : 'ADD PLAYER') + '</span>' +
+        '<button class="modal-close" onclick="window.closePlayerModal()">&#x2715;</button>' +
+      '</div>' +
+      '<div class="modal-body">' +
+        '<div class="modal-section">' +
+          '<div class="field-row">' +
+            '<div>' +
+              '<label class="field-label">Player name</label>' +
+              '<input class="field-input" id="pName" placeholder="First Last" value="' + (existing ? existing.name : '') + '">' +
+            '</div>' +
+            '<div>' +
+              '<label class="field-label">Jersey #</label>' +
+              '<input class="field-input" id="pNum" type="number" placeholder="00" value="' + (existing ? existing.num : '') + '">' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="modal-section">' +
+          '<label class="field-label">Primary position <span class="field-hint">click one to select</span></label>' +
+          '<div class="pos-selector" id="posPrimary">' + posButtons('primary') + '</div>' +
+        '</div>' +
+        '<div class="modal-section">' +
+          '<label class="field-label">Secondary positions <span class="field-hint">optional — click any that apply</span></label>' +
+          '<div class="pos-selector" id="posSecondary">' + posButtons('secondary') + '</div>' +
+        '</div>' +
+        '<div class="modal-section" id="skillsSection">' +
+          '<label class="field-label">Weak areas <span class="field-hint">tap to flag — shows red on coach cards</span></label>' +
+          '<div class="skills-grid" id="skillsGrid">' + renderSkillBtns(primaryPos, secondaryPos, weakSkills) + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="modal-footer">' +
+        '<button class="cancel-btn" onclick="window.closePlayerModal()">CANCEL</button>' +
+        '<button class="save-btn" onclick="window.savePlayerFromModal()">SAVE PLAYER</button>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+  modal._primaryPos   = primaryPos;
+  modal._secondaryPos = [...secondaryPos];
+  modal._weakSkills   = [...weakSkills];
+}
+
+function renderSkillBtns(primary, secondary, weak) {
+  const positions = [primary, ...secondary].filter(Boolean);
+  const skills = getSkillsForPos(positions);
+  if (!skills.length) return '<span style="font-size:11px;color:var(--ink4);font-family:var(--font-body)">Select a position first</span>';
+  return skills.map(s => `<button class="skill-btn${weak.includes(s)?' weak':''}" onclick="window.toggleSkill('${s}')">${s}</button>`).join('');
+}
+
+function getSkillsForPos(positions) {
+  const all = new Set();
+  positions.forEach(pos => (POS_SKILLS[pos]||[]).forEach(s => all.add(s)));
+  return [...all].sort();
+}
+
+window.togglePos = function(pos, type) {
+  const modal = document.getElementById('playerModal');
+  if (!modal) return;
+  if (type === 'primary') {
+    modal._primaryPos = modal._primaryPos === pos ? '' : pos;
+    // Remove from secondary if set as primary
+    modal._secondaryPos = modal._secondaryPos.filter(p => p !== pos);
+  } else {
+    // Secondary: toggle, don't allow if already primary
+    if (modal._primaryPos === pos) return;
+    const idx = modal._secondaryPos.indexOf(pos);
+    if (idx >= 0) modal._secondaryPos.splice(idx, 1);
+    else modal._secondaryPos.push(pos);
+  }
+  // Re-render position buttons — no inline colors, CSS classes only
+  const all = POS_LIST;
+  document.getElementById('posPrimary').innerHTML = all.map(p => {
+    const cls = modal._primaryPos === p ? ' selected-primary' : '';
+    return '<button class="pos-btn' + cls + '" onclick="window.togglePos(\'' + p + '\',\'primary\')">' + p + '</button>';
+  }).join('');
+  document.getElementById('posSecondary').innerHTML = all.map(p => {
+    const cls = modal._secondaryPos.includes(p) ? ' selected-secondary' : '';
+    return '<button class="pos-btn' + cls + '" onclick="window.togglePos(\'' + p + '\',\'secondary\')">' + p + '</button>';
+  }).join('');
+  // Re-render skills for new position combo
+  document.getElementById('skillsGrid').innerHTML = renderSkillBtns(modal._primaryPos, modal._secondaryPos, modal._weakSkills);
+};
+
+window.toggleSkill = function(skill) {
+  const modal = document.getElementById('playerModal');
+  if (!modal) return;
+  const idx = modal._weakSkills.indexOf(skill);
+  if (idx >= 0) modal._weakSkills.splice(idx, 1);
+  else modal._weakSkills.push(skill);
+  document.getElementById('skillsGrid').innerHTML = renderSkillBtns(modal._primaryPos, modal._secondaryPos, modal._weakSkills);
+};
+
+window.closePlayerModal = function() {
+  const modal = document.getElementById('playerModal');
+  if (modal) modal.remove();
+  editingPlayerId = null;
+};
+
+window.savePlayerFromModal = function() {
+  const modal = document.getElementById('playerModal');
+  const name = document.getElementById('pName').value.trim();
+  const num  = parseInt(document.getElementById('pNum').value) || 0;
+  const pos  = modal._primaryPos;
+
+  if (!name) { alert('Please enter a player name.'); return; }
+  if (!pos)  { alert('Please select a primary position.'); return; }
+
+  const id = editingPlayerId || ('p_' + Date.now());
+  const player = {
+    id, name, num, pos,
+    primaryPos: pos,
+    secondaryPos: modal._secondaryPos,
+    weak: modal._weakSkills,
+    good: getSkillsForPos([pos, ...modal._secondaryPos]).filter(s => !modal._weakSkills.includes(s))
+  };
+
+  savePlayer(player);
+  window.closePlayerModal();
+  render();
+};
+
+function editPlayer(id) { openPlayerModal(id); }
+function confirmDeletePlayer(id) {
+  if (confirm('Remove this player from the roster?')) {
+    deletePlayer(id);
+    render();
+  }
+}
+
+function buildRosterRows(isHC) {
+  const shown = PLAYERS
+    .filter(p => {
+      const matchPos = rosterPosFilter === 'All' || p.pos === rosterPosFilter || (p.secondaryPos||[]).includes(rosterPosFilter);
+      const matchSearch = !rosterSearch || p.name.toLowerCase().includes(rosterSearch.toLowerCase()) || String(p.num).includes(rosterSearch);
+      return matchPos && matchSearch;
+    })
+    .sort((a,b) => (a.num||0) - (b.num||0));
+
+  if (!shown.length) return '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--ink4);font-size:12px">No players match</td></tr>';
+
+  return shown.map(p => {
+    const allPos = [p.primaryPos||p.pos, ...(p.secondaryPos||[])].filter(Boolean);
+    const posTags = allPos.map((pos,i) =>
+      '<span style="display:inline-block;padding:1px 7px;margin:1px;font-family:var(--font-display);font-size:10px;letter-spacing:.04em;' +
+      (i===0 ? 'background:var(--royal-dark);color:#fff;' : 'background:var(--surface2);color:var(--ink2);border:1px solid var(--rule2);') +
+      '">' + pos + '</span>'
+    ).join('');
+    const weakTags = (p.weak||[]).slice(0,5).map(w =>
+      '<span style="display:inline-block;font-size:9px;padding:1px 6px;margin:1px;background:rgba(168,48,32,0.08);color:#a83020;border:1px solid rgba(168,48,32,0.25);font-family:var(--font-mono)">' + w + '</span>'
+    ).join('') + ((p.weak||[]).length > 5 ? '<span style="font-size:9px;color:var(--ink4)"> +' + (p.weak.length-5) + '</span>' : '');
+    const editBtn = '<button class="roster-action-btn" onclick="window.editPlayer(\'' + p.id + '\')">EDIT</button>';
+    const removeBtn = isHC ? '<button class="roster-action-btn delete" onclick="window.confirmDeletePlayer(\'' + p.id + '\')">REMOVE</button>' : '';
+    return '<tr>' +
+      '<td style="font-family:var(--font-mono);font-size:11px;color:#000;white-space:nowrap;text-align:center">' + (p.num||'—') + '</td>' +
+      '<td style="font-weight:500;font-size:12px;white-space:nowrap">' + p.name + '</td>' +
+      '<td style="white-space:nowrap;text-align:center">' + posTags + '</td>' +
+      '<td>' + (weakTags || '<span style="font-size:10px;color:var(--ink4)">—</span>') + '</td>' +
+      '<td style="white-space:nowrap">' + editBtn + removeBtn + '</td>' +
+      '</tr>';
+  }).join('');
+}
+
+function renderRosterEditor(el) {
+  const isHC = currentRole === 'HC';
+  const posFilters = ['All',...POS_LIST].map(p =>
+    `<button class="filter-btn${p===rosterPosFilter?' active':''}" onclick="window.setRosterPosFilter('${p}')">${p}</button>`).join('');
+
+  el.innerHTML = `
+    <div class="content-header">
+      <span class="content-title">EDIT ROSTER</span>
+      <span class="content-meta">${PLAYERS.length} PLAYERS</span>
+      <div style="flex:1"></div>
+      ${isHC ? `<button class="roster-add-btn" onclick="window.openAddPlayer()">+ ADD PLAYER</button>` : ''}
+    </div>
+    <div class="roster-toolbar">
+      <input class="roster-search" id="rosterSearchInput" placeholder="Search name or #..." oninput="window.setRosterSearch(this.value)" value="${rosterSearch}">
+      <div class="roster-pos-filter">${posFilters}</div>
+    </div>
+    <div class="roster-table-wrap">
+      <table class="roster-table">
+        <thead><tr><th style="text-align:center;width:40px">#</th><th>Name</th><th style="text-align:center">Position</th><th>Weak areas</th><th width="140">Actions</th></tr></thead>
+        <tbody id="rosterTbody">${buildRosterRows(isHC)}</tbody>
+      </table>
+    </div>`;
+
+  // Restore focus and cursor position if search was active
+  if (rosterSearch) {
+    const inp = document.getElementById('rosterSearchInput');
+    if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+  }
+}
+
+// ── SCHEDULE EDITOR ────────────────────────────────────────────────────────
+const TYPE_LABELS = {indy:'INDY',combo:'COMBO',team:'TEAM',tempo:'WARMUP'};
+const TYPE_OPTS = ['tempo','indy','combo','team'];
+
+function calcDuration(start, end) {
+  function toMins(t) {
+    const [h,m] = t.split(':').map(Number);
+    return h*60 + m;
+  }
+  const diff = toMins(end) - toMins(start);
+  return diff > 0 ? diff + ' min' : '—';
+}
+
+function scheduleChanged() {
+  // Push updated schedule to Firebase
+  if (db) fbSet('schedule', SCHEDULE);
+  // Show save confirmation briefly
+  const bar = document.getElementById('schedSaveBar');
+  if (bar) { bar.style.background='rgba(26,79,196,0.08)'; setTimeout(()=>bar.style.background='',1000); }
+}
+
+function addPeriod() {
+  const last = SCHEDULE[SCHEDULE.length-1];
+  SCHEDULE.push({start:last?last.end:'5:00', end:'5:10', period:'New period', type:'tempo'});
+  renderScheduleEditor(document.getElementById('mainContent'));
+}
+
+function removePeriod(idx) {
+  if (SCHEDULE.length <= 1) return;
+  SCHEDULE.splice(idx, 1);
+  scheduleChanged();
+  renderScheduleEditor(document.getElementById('mainContent'));
+}
+
+function movePeriod(idx, dir) {
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= SCHEDULE.length) return;
+  [SCHEDULE[idx], SCHEDULE[newIdx]] = [SCHEDULE[newIdx], SCHEDULE[idx]];
+  scheduleChanged();
+  renderScheduleEditor(document.getElementById('mainContent'));
+}
+
+function updatePeriodField(idx, field, val) {
+  SCHEDULE[idx][field] = val;
+  scheduleChanged();
+  // Refresh just the duration cell
+  const durEl = document.getElementById('dur-' + idx);
+  if (durEl) durEl.textContent = calcDuration(SCHEDULE[idx].start, SCHEDULE[idx].end);
+}
+
+function saveSchedule() {
+  scheduleChanged();
+  // Re-render script view so it picks up new times
+  if (currentView === 'script') render();
+  const bar = document.getElementById('schedSaveBar');
+  if (bar) {
+    const note = bar.querySelector('.sched-note');
+    if (note) { note.textContent = 'Saved! Script view updated.'; setTimeout(()=>note.textContent='Changes are applied to the practice script in real time.',2000); }
+  }
+}
+
+function renderScheduleEditor(el) {
+  const rows = SCHEDULE.map((row, i) => {
+    const typeOpts = TYPE_OPTS.map(t =>
+      '<option value="' + t + '"' + (row.type===t?' selected':'') + '>' + (TYPE_LABELS[t]||t) + '</option>'
+    ).join('');
+    const pillStyle = {
+      indy:  'background:#dce6ff;color:#1a3fa8;',
+      combo: 'background:#ffe8d6;color:#bf4800;',
+      team:  'background:#cdd8f8;color:#0d2e80;',
+      tempo: 'background:#e8edf5;color:#556080;',
+    }[row.type] || '';
+
+    return '<tr>' +
+      '<td style="width:28px;text-align:center">' +
+        '<div style="display:flex;flex-direction:column;gap:1px">' +
+          '<button class="sched-move-btn" onclick="window.movePeriod(' + i + ',-1)" ' + (i===0?'disabled style="opacity:.3"':'') + '>▲</button>' +
+          '<button class="sched-move-btn" onclick="window.movePeriod(' + i + ',1)" ' + (i===SCHEDULE.length-1?'disabled style="opacity:.3"':'') + '>▼</button>' +
+        '</div>' +
+      '</td>' +
+      '<td style="width:80px"><input class="sched-input" value="' + row.start + '" placeholder="3:30" onchange="window.updatePeriodField(' + i + ',\'start\',this.value)" onblur="window.updatePeriodField(' + i + ',\'start\',this.value)"></td>' +
+      '<td style="width:80px"><input class="sched-input" value="' + row.end + '" placeholder="3:40" onchange="window.updatePeriodField(' + i + ',\'end\',this.value)" onblur="window.updatePeriodField(' + i + ',\'end\',this.value)"></td>' +
+      '<td style="width:60px;text-align:center"><span id="dur-' + i + '" class="dur-badge">' + calcDuration(row.start, row.end) + '</span></td>' +
+      '<td><input class="sched-input name-input" value="' + row.period + '" onchange="window.updatePeriodField(' + i + ',\'period\',this.value)" onblur="window.updatePeriodField(' + i + ',\'period\',this.value)"></td>' +
+      '<td style="width:110px"><select class="type-select" onchange="window.updatePeriodField(' + i + ',\'type\',this.value)">' + typeOpts + '</select></td>' +
+      '<td style="width:50px;text-align:center"><button class="sched-del-btn" onclick="window.removePeriod(' + i + ')"' + (SCHEDULE.length<=1?' disabled':'') + '>✕</button></td>' +
+    '</tr>';
+  }).join('');
+
+  const totalStart = SCHEDULE[0]?.start || '—';
+  const totalEnd   = SCHEDULE[SCHEDULE.length-1]?.end || '—';
+
+  el.innerHTML =
+    '<div class="content-header">' +
+      '<span class="content-title">EDIT SCHEDULE</span>' +
+      '<span class="content-meta">' + SCHEDULE.length + ' PERIODS · ' + totalStart + '–' + totalEnd + '</span>' +
+      '<div style="flex:1"></div>' +
+      '<button class="sched-add-btn" onclick="window.addPeriod()">+ ADD PERIOD</button>' +
+    '</div>' +
+    '<div style="font-size:11px;color:var(--ink3);font-family:var(--font-body);margin-bottom:8px">Edit start/end times and period names directly. Changes apply to the practice script immediately. Use ▲▼ to reorder periods.</div>' +
+    '<div class="sched-table-wrap">' +
+      '<table class="sched-table">' +
+        '<thead><tr>' +
+          '<th style="width:28px"></th>' +
+          '<th>Start</th><th>End</th><th>Duration</th>' +
+          '<th>Period name</th><th>Type</th><th style="width:50px"></th>' +
+        '</tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+      '</table>' +
+    '</div>' +
+    '<div class="sched-save-bar" id="schedSaveBar">' +
+      '<button class="sched-save-btn" onclick="window.saveSchedule()">SAVE & APPLY</button>' +
+      '<span class="sched-note">Changes are applied to the practice script in real time.</span>' +
+    '</div>';
+}
+
+// Expose schedule editor functions
+window.addPeriod         = addPeriod;
+window.removePeriod      = removePeriod;
+window.movePeriod        = movePeriod;
+window.updatePeriodField = updatePeriodField;
+window.saveSchedule      = saveSchedule;
+function openAddPlayer() { openPlayerModal(null); }
+function setRosterSearch(val) {
+  rosterSearch = val;
+  // Only rebuild the table body — don't re-render the whole view (would lose focus)
+  const tbody = document.getElementById('rosterTbody');
+  if (tbody) {
+    tbody.innerHTML = buildRosterRows(currentRole === 'HC');
+  } else {
+    // First load — full render
+    render();
+  }
+}
+function setRosterPosFilter(pos) { rosterPosFilter = pos; render(); }
+
+// Initial render placeholder
+document.getElementById('mainContent').innerHTML='';
+
+// Expose functions needed by inline HTML onclick= attributes
+window.doLogin      = doLogin;
+window.doLogout     = doLogout;
+window.setView      = setView;
+window.setDay       = setDay;
+window.updateDrill  = updateDrill;
+window.setPlayerFilter    = setPlayerFilter;
+window.renderPlayers      = renderPlayers;
+window.setRosterSearch    = setRosterSearch;
+window.setRosterPosFilter = setRosterPosFilter;
+window.openAddPlayer      = openAddPlayer;
+window.editPlayer             = editPlayer;
+window.confirmDeletePlayer    = confirmDeletePlayer;
+</script>
+</body>
+</html>
