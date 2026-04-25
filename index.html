@@ -718,17 +718,7 @@ html, body {
 }
 .player-note b { color: var(--ink); }
 
-.period-next {
-  background: var(--surface);
-  border: 1px solid var(--rule);
-  padding: 9px 13px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.period-next-time { font-family: var(--font-mono); font-size: 13px; color: #000; min-width: 40px; font-weight: 500; }
-.period-next-label { font-size: 13px; color: #000; flex: 1; }
-.period-next-pill { flex-shrink: 0; }
+
 
 /* ══════════════════════════════════════════════════════
    BUTTONS & MISC
@@ -1337,6 +1327,9 @@ canvas#wbCanvas {
       <div class="sidebar-item" onclick="window.setView('whiteboard')" id="nav-whiteboard">
         Whiteboard
       </div>
+      <div class="sidebar-item" onclick="window.setView('reps')" id="nav-reps">
+        Rep Counter
+      </div>
       <div id="nav-roster-placeholder"></div>
       <div id="nav-schedule-placeholder"></div>
 
@@ -1782,11 +1775,15 @@ function doLogin(){
       initSidelineSync();
       initAttendanceSync();
       initPeriodOffsetSync();
+      initRepSync();
+      initAlertSync();
     } else {
       initRoster();
       initSidelineSync();
       initAttendanceSync();
       initPeriodOffsetSync();
+      initRepSync();
+      initAlertSync();
     }
   }
 
@@ -1873,7 +1870,7 @@ function setView(v){
     wbListener = null;
   }
   currentView=v;
-  ['script','mygroup','players','sideline','roster','schedule','guide','template','whiteboard','schedule_player'].forEach(n=>{
+  ['script','mygroup','players','sideline','roster','schedule','guide','template','whiteboard','schedule_player','reps'].forEach(n=>{
     document.getElementById('nav-'+n)?.classList.toggle('active',n===v);
   });
   // Auto-close sidebar on mobile after selecting a view
@@ -1912,6 +1909,7 @@ document.addEventListener('click', function(e) {
 function setDay(day,el){
   currentDay=day;
   attendance = {}; // reset local attendance for new day
+  repData = {};    // reset local rep data for new day
   document.querySelectorAll('.day-item').forEach(d=>d.classList.remove('active'));
   if (el) el.classList.add('active');
   // Sync dropdown active state
@@ -1928,6 +1926,7 @@ function setDay(day,el){
   if (sidebar) sidebar.classList.remove('open');
   if (overlay) overlay.classList.remove('visible');
   initAttendanceSync(); // load attendance for new day
+  initRepSync();       // load reps for new day
   render();
 }
 
@@ -1942,6 +1941,7 @@ function render(){
   else if(currentView==='guide')       renderUserGuide(el);
   else if(currentView==='template')    renderTemplatePage(el);
   else if(currentView==='whiteboard')       renderWhiteboard(el);
+  else if(currentView==='reps')             renderRepCounter(el);
   else if(currentView==='schedule_player') renderMySchedule(el);
 }
 
@@ -2005,7 +2005,6 @@ function renderScript(el){
     const hasComment=ri===2;
     return `<tr>
       <td class="time-cell">${row.start}</td>
-      <td>${pill(row.type)}</td>
       <td style="font-size:11px;color:var(--ink2);white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis">${row.period}${hasComment?` <span class="comment-badge" onclick="alert('DB Coach: Need extra time on hip flip this week')">2 notes</span>`:''}</td>
       <td>${unitPill(row.unit||'all')}</td>
       ${cells}
@@ -2014,7 +2013,7 @@ function renderScript(el){
 
   const table=`<div class="script-wrap">
     <table class="script-table">
-      <tr><th style="color:#fff">Start</th><th style="color:#fff">Type</th><th style="min-width:120px;color:#fff">Period</th><th style="color:#fff;width:70px">Unit</th>${posHeaders}<th></th></tr>
+      <tr><th style="color:#fff">Start</th><th style="min-width:200px;color:#fff">Period</th><th style="color:#fff;width:70px">Unit</th>${posHeaders}<th></th></tr>
       ${rows}
     </table>
   </div>`;
@@ -2359,7 +2358,12 @@ function renderSidelineControls() {
     '<button onclick="window.skipPeriod()"      style="' + grayBtn + '">⏭ SKIP</button>' +
     '<button onclick="window.addTimeToPeriod(2)" style="' + grayBtn + '">+2m</button>' +
     '<button onclick="window.addTimeToPeriod(5)" style="' + grayBtn + '">+5m</button>' +
-    '<button onclick="window.resetPractice()"   style="' + grayBtn + '">RESET</button>';
+    '<button onclick="window.resetPractice()"   style="' + grayBtn + '">RESET</button>' +
+    '<span style="display:inline-block;width:1px;height:28px;background:rgba(255,255,255,0.1);margin:0 8px;vertical-align:middle"></span>' +
+    (weatherHold
+      ? '<button onclick="window.clearWeatherHold()" style="padding:7px 10px;background:#555;color:#fff;border:none;font-family:var(--font-display);font-size:12px;letter-spacing:.06em;cursor:pointer;border-radius:2px;margin-left:0">CLEAR HOLD</button>'
+      : '<button onclick="window.triggerWeatherHold()" style="padding:7px 10px;background:#1a5fa8;color:#fff;border:none;font-family:var(--font-display);font-size:12px;letter-spacing:.06em;cursor:pointer;border-radius:2px;margin-left:0">⛈ WEATHER</button>'
+    );
 }
 
 // Renders a period overview strip showing all periods with status dots
@@ -2508,13 +2512,34 @@ function buildPlayerChips(myPos, row) {
   if (!unitPlayers.length) return '';
 
   const chips = unitPlayers.map(p => {
-    const dot = isPresent(p.id)
-      ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#2e8b2e;margin-right:5px;vertical-align:middle"></span>'
-      : '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#a83020;margin-right:5px;vertical-align:middle"></span>';
-    return '<div style="display:flex;align-items:center;padding:4px 8px;background:var(--surface2);border:1px solid var(--rule);font-size:12px">' +
+    const reps    = getReps(p.id);
+    const present = isPresent(p.id);
+    const dot = present
+      ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#2e8b2e;margin-right:5px;vertical-align:middle;flex-shrink:0"></span>'
+      : '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#a83020;margin-right:5px;vertical-align:middle;flex-shrink:0"></span>';
+    const repBadge = '<span id="repbadge_' + p.id + '" style="' +
+      'display:inline-flex;align-items:center;justify-content:center;' +
+      'min-width:20px;height:20px;padding:0 4px;margin-left:6px;flex-shrink:0;' +
+      'background:' + (reps > 0 ? 'var(--royal-dark)' : 'var(--rule2)') + ';' +
+      'color:' + (reps > 0 ? '#fff' : 'var(--ink4)') + ';' +
+      'font-family:var(--font-mono);font-size:10px;font-weight:700;border-radius:10px">' +
+      reps + '</span>';
+    return '<div id="chip_' + p.id + '" ' +
+      'onclick="window.addRep(\'' + p.id + '\')" ' +
+      'oncontextmenu="event.preventDefault();window.removeRep(\'' + p.id + '\')" ' +
+      'ontouchstart="window._repTimer=setTimeout(()=>{window.removeRep(\'' + p.id + '\');window._repLong=true;},500);window._repLong=false" ' +
+      'ontouchend="clearTimeout(window._repTimer);if(window._repLong)event.preventDefault()" ' +
+      'title="Tap to add rep · Hold to remove" ' +
+      'style="' +
+      'display:flex;align-items:center;padding:6px 10px;' +
+      'background:' + (reps > 0 ? '#eef2ff' : 'var(--surface2)') + ';' +
+      'border:1px solid ' + (reps > 0 ? 'var(--royal-dark)' : 'var(--rule)') + ';' +
+      'font-size:12px;cursor:pointer;user-select:none;transition:all .1s;' +
+      (!present ? 'opacity:0.45;' : '') + '">' +
       dot +
-      '<span style="font-family:var(--font-mono);color:var(--ink3);font-size:10px;margin-right:5px">#' + p.num + '</span>' +
+      '<span style="font-family:var(--font-mono);color:var(--ink3);font-size:10px;margin-right:4px">#' + p.num + '</span>' +
       '<span style="font-family:var(--font-body);font-weight:600;color:var(--ink)">' + p.name + '</span>' +
+      repBadge +
     '</div>';
   }).join('');
 
@@ -2523,6 +2548,261 @@ function buildPlayerChips(myPos, row) {
     '<div style="display:flex;flex-wrap:wrap;gap:6px">' + chips + '</div>' +
   '</div>';
 }
+
+
+// ── REP COUNTER ────────────────────────────────────────────────────────────
+// reps[day][playerId] = count
+// Stored in Firebase at playscript/reps/{day}/{playerId}
+var repData = {}; // keyed: repData[playerId] = count for currentDay
+
+function getReps(playerId) {
+  return repData[playerId] || 0;
+}
+
+function addRep(playerId) {
+  repData[playerId] = (repData[playerId] || 0) + 1;
+  const reps = repData[playerId];
+  if (db) set(ref(db, 'playscript/reps/' + currentDay + '/' + playerId), reps);
+  updateRepChip(playerId, reps);
+}
+
+function removeRep(playerId) {
+  const current = repData[playerId] || 0;
+  if (current <= 0) return;
+  repData[playerId] = current - 1;
+  const reps = repData[playerId];
+  if (db) set(ref(db, 'playscript/reps/' + currentDay + '/' + playerId), reps);
+  updateRepChip(playerId, reps);
+}
+
+function updateRepChip(playerId, reps) {
+  const badge = document.getElementById('repbadge_' + playerId);
+  const chip  = document.getElementById('chip_' + playerId);
+  const tableChip = document.getElementById('rep_' + playerId);
+  if (badge) {
+    badge.textContent = reps;
+    badge.style.background = reps > 0 ? 'var(--royal-dark)' : 'var(--rule2)';
+    badge.style.color = reps > 0 ? '#fff' : 'var(--ink4)';
+  }
+  if (chip) {
+    chip.style.background = reps > 0 ? '#eef2ff' : 'var(--surface2)';
+    chip.style.borderColor = reps > 0 ? 'var(--royal-dark)' : 'var(--rule)';
+  }
+  if (tableChip) tableChip.textContent = reps;
+}
+
+window.removeRep = removeRep;
+
+function resetReps() {
+  repData = {};
+  if (db) remove(ref(db, 'playscript/reps/' + currentDay));
+  render();
+}
+
+function initRepSync() {
+  if (!db) return;
+  onValue(ref(db, 'playscript/reps/' + currentDay), snap => {
+    const val = snap.val();
+    repData = val ? {...val} : {};
+    if (currentView === 'reps') render();
+    PLAYERS.forEach(p => {
+      const reps  = getReps(p.id);
+      const badge = document.getElementById('repbadge_' + p.id);
+      const chip  = document.getElementById('chip_' + p.id);
+      const tableChip = document.getElementById('rep_' + p.id);
+      if (badge) { badge.textContent = reps; badge.style.background = reps>0?'var(--royal-dark)':'var(--rule2)'; badge.style.color = reps>0?'#fff':'var(--ink4)'; }
+      if (chip)  { chip.style.background = reps>0?'#eef2ff':'var(--surface2)'; chip.style.borderColor = reps>0?'var(--royal-dark)':'var(--rule)'; }
+      if (tableChip) tableChip.textContent = reps;
+    });
+  });
+}
+
+function renderRepCounter(el) {
+  const myPos = currentRole === 'HC' ? null : currentRole;
+
+  // Get players - HC sees all, position coaches see their group
+  const players = myPos
+    ? PLAYERS.filter(p => p.pos === myPos || p.primaryPos === myPos)
+    : [...PLAYERS];
+
+  players.sort((a,b) => getReps(b.id) - getReps(a.id));
+
+  const totalReps = players.reduce((sum, p) => sum + getReps(p.id), 0);
+  const zeroReps  = players.filter(p => getReps(p.id) === 0).length;
+
+  const rows = players.map(p => {
+    const reps = getReps(p.id);
+    const pct  = totalReps > 0 ? Math.round((reps / Math.max(...players.map(q=>getReps(q.id)),1)) * 100) : 0;
+    const present = isPresent(p.id);
+    return '<tr style="' + (!present?'opacity:0.4':'') + '">' +
+      '<td style="font-family:var(--font-mono);font-size:11px;text-align:center;color:var(--ink3);width:36px">#' + p.num + '</td>' +
+      '<td style="font-weight:600;font-size:13px;padding:8px 10px">' + p.name + '</td>' +
+      '<td style="width:60px;text-align:center">' +
+        '<button onclick="window.addRep(\'' + p.id + '\')" style="width:44px;height:44px;background:' + (reps>0?'var(--royal-dark)':'var(--surface2)') + ';color:' + (reps>0?'#fff':'var(--ink3)') + ';border:1px solid var(--rule2);font-family:var(--font-display);font-size:18px;cursor:pointer;letter-spacing:0">' +
+          '<span id="rep_' + p.id + '">' + reps + '</span>' +
+        '</button>' +
+      '</td>' +
+      '<td style="padding:0 10px;min-width:80px">' +
+        '<div style="height:6px;background:var(--rule);border-radius:3px;overflow:hidden">' +
+          '<div style="height:6px;background:' + (reps===0?'var(--rule)':reps===Math.max(...players.map(q=>getReps(q.id)))&&reps>0?'var(--orange)':'var(--royal-dark)') + ';width:' + pct + '%;transition:width .3s"></div>' +
+        '</div>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+
+  el.innerHTML =
+    '<div class="content-header">' +
+      '<span class="content-title">REP COUNTER</span>' +
+      '<span class="content-meta">' + totalReps + ' TOTAL REPS · ' + zeroReps + ' NO REPS</span>' +
+      '<div style="flex:1"></div>' +
+      (currentRole === 'HC' ? '<button onclick="window.resetReps()" style="padding:6px 14px;background:transparent;border:1px solid var(--rule2);color:var(--ink3);font-family:var(--font-display);font-size:12px;letter-spacing:.06em;cursor:pointer">RESET DAY</button>' : '') +
+    '</div>' +
+    '<div style="font-size:12px;color:var(--ink3);font-family:var(--font-body);margin-bottom:10px">Tap a number to add a rep. Sorted by most reps. Orange bar = leader.</div>' +
+    '<div class="roster-table-wrap">' +
+      '<table class="roster-table" style="width:100%">' +
+        '<thead><tr>' +
+          '<th style="text-align:center;width:36px">#</th>' +
+          '<th>Player</th>' +
+          '<th style="text-align:center;width:60px">Reps</th>' +
+          '<th>Load</th>' +
+        '</tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+      '</table>' +
+    '</div>';
+}
+
+window.addRep   = addRep;
+window.resetReps = resetReps;
+
+
+// ── INJURY FLAG & WEATHER HOLD ────────────────────────────────────────────
+var weatherHold = false;
+
+function triggerWeatherHold() {
+  weatherHold = true;
+  // Pause practice clock if running
+  if (practiceStartTime && !practicePausedAt) pausePractice();
+  // Write to Firebase so all devices get it
+  if (db) set(ref(db, 'playscript/weatherHold'), true);
+  showBanner('warning', '⛈', 'WEATHER HOLD — GET INSIDE', 'Practice suspended. All coaches check in.', null);
+  renderSidelineControls();
+}
+
+function clearWeatherHold() {
+  weatherHold = false;
+  if (db) remove(ref(db, 'playscript/weatherHold'));
+  dismissNotif();
+  renderSidelineControls();
+}
+
+function flagInjury(playerName) {
+  const msg = playerName || prompt('Player name or jersey number?');
+  if (!msg) return;
+  const text = msg.trim();
+  // Push injury alert to Firebase so all coaches see it
+  if (db) set(ref(db, 'playscript/injuryAlert'), {player: text, ts: Date.now()});
+  showBanner('warning', '🚑', 'TRAINER — ' + text.toUpperCase(), 'Injury flag raised. Check field immediately.', null);
+}
+
+function clearInjuryAlert() {
+  if (db) remove(ref(db, 'playscript/injuryAlert'));
+  dismissNotif();
+}
+
+function openInjuryModal() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'injuryModal';
+  overlay.innerHTML =
+    '<div class="modal-box" style="max-width:420px">' +
+      '<div class="modal-header">' +
+        '<span class="modal-title" style="color:#a83020">🚑 INJURY FLAG</span>' +
+        '<button class="modal-close" onclick="document.getElementById(\'injuryModal\').remove()">&#x2715;</button>' +
+      '</div>' +
+      '<div class="modal-body" style="gap:10px">' +
+        '<div style="font-size:13px;color:#000;font-family:var(--font-body)">Search for a player or type a name, then tap ALERT ALL COACHES.</div>' +
+        '<input id="injuryPlayerInput" placeholder="Type jersey # or name to search..." style="width:100%;padding:10px;border:1px solid var(--rule2);font-size:14px;font-family:var(--font-body);box-sizing:border-box" autocomplete="off">' +
+        '<div id="injuryPlayerList" style="display:flex;flex-wrap:wrap;gap:6px;max-height:200px;overflow-y:auto"></div>' +
+      '</div>' +
+      '<div class="modal-footer">' +
+        '<button class="cancel-btn" onclick="document.getElementById(\'injuryModal\').remove()">CANCEL</button>' +
+        '<button class="save-btn" style="background:#a83020" onclick="window.submitInjury()">🚑 ALERT ALL COACHES</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+
+  // Build player list renderer
+  function renderInjuryList(filter) {
+    const list = document.getElementById('injuryPlayerList');
+    if (!list) return;
+    const q = (filter || '').toLowerCase().trim();
+    const shown = PLAYERS
+      .filter(p => isPresent(p.id))
+      .filter(p => !q || p.name.toLowerCase().includes(q) || String(p.num).includes(q))
+      .sort((a,b) => a.num - b.num);
+    list.innerHTML = shown.map(p =>
+      '<button onclick="window.submitInjury(\'' + p.num + ' ' + p.name + '\')" ' +
+      'style="padding:6px 12px;background:var(--surface2);border:1px solid var(--rule2);font-size:13px;font-family:var(--font-body);cursor:pointer;text-align:left;border-radius:2px">' +
+        '#' + p.num + ' ' + p.name +
+      '</button>'
+    ).join('') || '<span style="font-size:12px;color:var(--ink3);font-family:var(--font-body)">No players found</span>';
+  }
+
+  // Wire up live search — oninput fires on every keystroke
+  setTimeout(() => {
+    const inp = document.getElementById('injuryPlayerInput');
+    if (inp) {
+      inp.focus();
+      inp.addEventListener('input', () => renderInjuryList(inp.value));
+      renderInjuryList(''); // show all players initially
+    }
+  }, 50);
+}
+
+function submitInjury(name) {
+  let text = name;
+  if (!text) {
+    const inp = document.getElementById('injuryPlayerInput');
+    text = inp ? inp.value.trim() : '';
+  }
+  if (!text) {
+    const inp = document.getElementById('injuryPlayerInput');
+    if (inp) inp.focus();
+    return;
+  }
+  const overlay = document.getElementById('injuryModal');
+  if (overlay) overlay.remove();
+  flagInjury(text);
+}
+
+function initAlertSync() {
+  if (!db) return;
+  // Weather hold sync
+  onValue(ref(db, 'playscript/weatherHold'), snap => {
+    const val = snap.val();
+    if (val && !weatherHold) {
+      weatherHold = true;
+      showBanner('warning', '⛈', 'WEATHER HOLD — GET INSIDE', 'Practice suspended. All coaches check in.', null);
+      renderSidelineControls();
+    } else if (!val && weatherHold) {
+      weatherHold = false;
+      dismissNotif();
+      renderSidelineControls();
+    }
+  });
+  // Injury alert sync — position coaches receive HC alerts
+  onValue(ref(db, 'playscript/injuryAlert'), snap => {
+    const val = snap.val();
+    if (val && val.player) {
+      showBanner('warning', '🚑', 'TRAINER — ' + val.player.toUpperCase(), 'Injury flag raised. Check field immediately.', null);
+    }
+  });
+}
+
+window.triggerWeatherHold = triggerWeatherHold;
+window.clearWeatherHold   = clearWeatherHold;
+window.openInjuryModal    = openInjuryModal;
+window.submitInjury       = submitInjury;
 
 // ── DYNAMIC PERIOD MANAGEMENT ─────────────────────────────────────────────
 function applyPeriodOffset(periodIdx, offsetMs) {
@@ -2694,9 +2974,6 @@ function tickSideline() {
   // Check if we need to fire a notification
   checkNotifications(displayStatus);
 
-  // Update period overview strip
-  const stripEl = document.getElementById('periodStrip');
-  if (stripEl) stripEl.innerHTML = renderPeriodStrip();
 
   // Progress bar
   const pct = Math.round((displayStatus.secsDone / displayStatus.totalSecs) * 100);
@@ -2741,6 +3018,7 @@ function renderSideline(el) {
       '<span class="content-title">SIDELINE</span>' +
       '<div style="flex:1"></div>' +
       (isHC ? '<div id="sidelineControls"></div>' : '') +
+      '<button onclick="window.openInjuryModal()" style="padding:6px 12px;background:#a83020;color:#fff;border:none;font-family:var(--font-display);font-size:12px;letter-spacing:.06em;cursor:pointer;border-radius:2px;margin-left:8px">🚑 INJURY</button>' +
     '</div>' +
 
     '<div class="mobile-view">' +
@@ -2782,8 +3060,8 @@ function renderSideline(el) {
     '<div id="sidelineNextContent" style="margin-bottom:14px"></div>' +
 
     // ── Period strip ──
-    '<div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;color:rgba(255,255,255,0.5);margin-bottom:6px">ALL PERIODS</div>' +
-    '<div id="periodStrip">' + renderPeriodStrip() + '</div>' +
+    (weatherHold ? '<div style="background:#a83020;color:#fff;padding:12px 14px;font-family:var(--font-display);font-size:15px;letter-spacing:.08em;margin-bottom:10px;text-align:center">⛈ WEATHER HOLD — GET INSIDE</div>' : '') +
+    '<div id="periodStrip"></div>' +
 
     '<div style="text-align:center;padding:10px 0 4px;font-size:11px;color:rgba(255,255,255,0.3);font-family:var(--font-mono)">synced across all coaches</div>' +
     '</div>';
@@ -4104,102 +4382,125 @@ function renderTemplatePage(el) {
 }
 
 function renderUserGuide(el) {
+  const S = 'font-family:var(--font-display);font-size:18px;letter-spacing:.08em;color:var(--royal-dark);margin-bottom:8px';
+  const HC = '<span style="display:inline-block;padding:1px 7px;background:var(--royal-dark);color:#fff;font-family:var(--font-display);font-size:10px;letter-spacing:.06em;vertical-align:middle;margin-left:4px">HC ONLY</span>';
   el.innerHTML = `
     <div class="content-header">
       <span class="content-title">USER GUIDE</span>
-      
     </div>
     <div style="max-width:700px;font-family:var(--font-body);font-size:14px;line-height:1.75;color:#000;display:flex;flex-direction:column;gap:28px">
 
       <div>
-        <div style="font-family:var(--font-display);font-size:18px;letter-spacing:.08em;color:var(--royal-dark);margin-bottom:8px">WHAT THIS APP IS</div>
-        <p>This is a live, shared practice planning tool for your entire coaching staff. Every coach on your staff logs in from their own phone, tablet, or computer and sees the same practice script in real time. When the head coach updates a drill, they see it instantly. When the head coach starts the practice clock, every phone starts counting down together.</p>
-        <p>The app works in any web browser — no download, no install.</p>
+        <div style="${S}">WHAT THIS APP IS</div>
+        <p>A live, shared practice planning tool for the entire coaching staff. Every coach logs in from their own phone or computer and sees the same practice script in real time. When the Head Coach updates a drill, everyone sees it instantly. When the Head Coach starts the practice clock, every phone counts down together.</p>
+        <p>Works in any web browser — no download, no install. On mobile, tap ☰ to open the sidebar menu.</p>
       </div>
 
       <div>
-        <div style="font-family:var(--font-display);font-size:18px;letter-spacing:.08em;color:var(--royal-dark);margin-bottom:8px">LOGGING IN</div>
-        <p>When you open the app you'll see the login screen. Your tile is at the top, separate from the position coaches. Tap your Coaching Role, then tap <strong>LOGIN</strong>.</p>
-        <p>Position coaches see their own tile in the 3×3 grid below yours. Each coach only sees what's relevant to their role — the head coach sees everything.</p>
+        <div style="${S}">LOGGING IN</div>
+        <p>Open the app and tap your coaching role, then tap <strong>LOGIN</strong>. The Head Coach tile is at the top. Position coaches are in the grid below. Each coach sees only what is relevant to their role — the Head Coach sees everything.</p>
+        <p>To switch roles, tap <strong>SWITCH ROLE</strong> in the top right corner. The day of the week is shown in the top bar and can be tapped to change days from a dropdown.</p>
       </div>
 
       <div>
-        <div style="font-family:var(--font-display);font-size:18px;letter-spacing:.08em;color:var(--royal-dark);margin-bottom:8px">THE SIDEBAR MENU</div>
-        <p>The left sidebar is your navigation. On a phone, tap the <strong>☰</strong> button in the top left to open it, then tap any item and it closes automatically.</p>
-        <p><strong>Views:</strong></p>
-        <ul style="margin:6px 0 6px 20px;display:flex;flex-direction:column;gap:5px">
-          <li><strong>Practice Script</strong> — the full weekly script grid, all positions and all periods</li>
-          <li><strong>Position Unit</strong> — your players for the current day (e.g. DB Unit for the DB coach)</li>
-          <li><strong>Roster</strong> — the full player list, filterable by position</li>
-          <li><strong>Sideline</strong> — the live practice clock</li>
-          <li><strong>Edit Roster</strong> — add, edit, and remove players <em>(Head Coach only)</em></li>
-          <li><strong>Edit Schedule</strong> — change practice times and period names <em>(Head Coach only)</em></li>
+        <div style="${S}">PRACTICE SCRIPT</div>
+        <p>The main planning view. All practice periods are rows, all position groups are columns. Scroll right to see all groups. The Start time, Period name, and Unit assignment are shown for each row.</p>
+        <p>Tap any drill cell to edit it. ${HC} can edit every cell. Position coaches can only edit their own group's Indy cells — those appear in bold.</p>
+        <p>Changes save automatically and sync to all coaches in real time.</p>
+      </div>
+
+      <div>
+        <div style="${S}">SIDELINE — THE PRACTICE CLOCK</div>
+        <p>Open this view during practice. Every coach should have it on their screen. It shows two cards:</p>
+        <ul style="margin:6px 0 6px 20px;display:flex;flex-direction:column;gap:6px">
+          <li><strong>▶ NOW</strong> — the current period name, your drill, the unit, your players for this period with rep counts, and a countdown timer</li>
+          <li><strong>⏭ NEXT</strong> — the upcoming period name, drill, unit, and players</li>
         </ul>
-        <p><strong>Day:</strong> Tap any day of the week to switch the script view. Saturday and Sunday are available for weekend sessions.</p>
-      </div>
+        <p>Both cards show before the clock starts so coaches know what to expect.</p>
 
-      <div>
-        <div style="font-family:var(--font-display);font-size:18px;letter-spacing:.08em;color:var(--royal-dark);margin-bottom:8px">THE PRACTICE SCRIPT</div>
-        <p>This is the main planning view. It shows all your practice periods as rows, and all position groups as columns. You can scroll right to see all groups.</p>
-        <p>As Head Coach you can edit every cell. Tap any cell and type the drill. Position coaches can only edit their own group's cells during Indy periods — their cells appear in bold so they know what they can touch.</p>
-        <p>Changes save automatically. Every coach sees your edits in real time if Firebase is connected. Without Firebase, each coach sees only their own local version.</p>
-      </div>
-
-      <div>
-        <div style="font-family:var(--font-display);font-size:18px;letter-spacing:.08em;color:var(--royal-dark);margin-bottom:8px">EDIT SCHEDULE</div>
-        <p>This is where you set your practice clock structure — the times, period names, and period types (Warmup, Indy, Combo, Team).</p>
-        <p><strong>Important:</strong> The schedule applies to every day of the week. It's the same time structure Monday through Sunday. What changes day to day is the drills you put in each cell of the Practice Script.</p>
+        <p style="margin-top:10px"><strong>Clock controls</strong> ${HC}</p>
         <ul style="margin:6px 0 6px 20px;display:flex;flex-direction:column;gap:5px">
-          <li>Tap any start or end time and type a new one (format: 3:30, 4:15, etc.)</li>
-          <li>Tap any period name to rename it</li>
-          <li>Use ▲▼ to reorder periods</li>
-          <li>Use + ADD PERIOD to add new periods</li>
-          <li>Tap <strong>SAVE & APPLY</strong> when done — the practice script updates immediately</li>
+          <li><strong>START PRACTICE</strong> — starts the synchronized countdown on every device</li>
+          <li><strong>PAUSE / RESUME</strong> — freezes or restarts the clock on all devices simultaneously</li>
+          <li><strong>⏭ SKIP</strong> — immediately ends the current period and advances to the next</li>
+          <li><strong>+2m / +5m</strong> — adds time to the current period</li>
+          <li><strong>RESET</strong> — clears the clock and all period offsets</li>
+          <li><strong>⛈ WEATHER</strong> — pauses practice and sends a hold alert to all coaches. Tap CLEAR HOLD to resume.</li>
         </ul>
+
+        <p style="margin-top:10px"><strong>Injury flag</strong> — available to all coaches. Tap <strong>🚑 INJURY</strong> in the top bar to open the player search. Type a jersey number or name, select the player, and tap ALERT ALL COACHES. A red banner fires on every device immediately.</p>
+
+        <p style="margin-top:10px"><strong>Rep counting</strong> — tap any player chip in the NOW card to add a rep. The count updates in place. Hold for half a second (or right-click on desktop) to subtract a rep if you tap by mistake. See the Rep Counter view for a full summary.</p>
+
+        <p style="margin-top:10px"><strong>Notifications</strong> — 15 seconds before a period ends, an orange banner appears on every device. A new period banner fires when the clock advances. Allow notifications when prompted to receive alerts even when the app is in the background (iPhone requires the app saved to the home screen first).</p>
       </div>
 
       <div>
-        <div style="font-family:var(--font-display);font-size:18px;letter-spacing:.08em;color:var(--royal-dark);margin-bottom:8px">EDIT ROSTER</div>
-        <p>Here you manage your player database. Tap <strong>+ ADD PLAYER</strong> to add someone. Tap <strong>EDIT</strong> on any row to update their info. Tap <strong>REMOVE</strong> to delete them.</p>
-        <p>For each player you can set:</p>
-        <ul style="margin:6px 0 6px 20px;display:flex;flex-direction:column;gap:5px">
-          <li>Name and jersey number</li>
-          <li><strong>Primary position</strong> (solid blue — their main group)</li>
-          <li><strong>Secondary positions</strong> (blue outline — they also rep in these groups)</li>
-          <li><strong>Weak areas</strong> (flagged red — shows up on coach cards so position coaches know what to focus on)</li>
-        </ul>
-        <p>You can search by name or jersey number, or filter by position using the buttons at the top.</p>
+        <div style="${S}">POSITION UNIT VIEW</div>
+        <p>Your personal view for practice. Shows all players in your position group organized by depth chart unit: 1ST TEAM, 2ND TEAM, 3RD TEAM, SCOUT TEAM. Multi-position players who route to your group for any period type also appear here with their routing chips showing where they go each period type.</p>
+        <p>Tap <strong>HERE</strong> or <strong>ABSENT</strong> on any player card to take attendance. The change syncs to all coaches immediately.</p>
       </div>
 
       <div>
-        <div style="font-family:var(--font-display);font-size:18px;letter-spacing:.08em;color:var(--royal-dark);margin-bottom:8px">SIDELINE — THE PRACTICE CLOCK</div>
-        <p>The Sideline view is the most important view during practice. Every coach should have this open on their phone.</p>
-        <p><strong>Starting practice:</strong> Only you see the green <strong>START PRACTICE</strong> button. Tap it and every coach's phone simultaneously starts counting down the first period. The timer is anchored to real clock time — if a coach opens the app 5 minutes into practice, they immediately see the correct period with the correct time remaining.</p>
-        <p><strong>Pausing:</strong> Tap the orange <strong>PAUSE</strong> button to freeze the clock on every phone at once. Tap <strong>RESUME</strong> (green) to pick up exactly where you left off. Tap <strong>RESET</strong> to clear the clock and start over.</p>
-        <p><strong>What coaches see:</strong></p>
-        <ul style="margin:6px 0 6px 20px;display:flex;flex-direction:column;gap:5px">
-          <li>The current period name and drill for their group</li>
-          <li>A countdown timer</li>
-          <li>An orange progress bar showing how far through the period you are</li>
-          <li>The next period coming up</li>
-        </ul>
-        <p><strong>Notifications:</strong> 15 seconds before a period ends, an orange banner slides down on every coach's phone. When a new period starts, a blue banner appears. Coaches who allow notifications will also get phone alerts in the background (Android works automatically; iPhone requires the app saved to the home screen first).</p>
-        <p><strong>What the clock does NOT do:</strong></p>
-        <ul style="margin:6px 0 6px 20px;display:flex;flex-direction:column;gap:5px">
-          <li>It does not automatically blow the horn — someone still needs to do that</li>
-          <li>It does not account for water breaks or unplanned stops unless you use Pause</li>
-          <li>It does not adjust if you run over on a period — use Pause/Reset to recalibrate</li>
-        </ul>
+        <div style="${S}">FULL ROSTER</div>
+        <p>The complete player list sorted by jersey number. Filter by position using the buttons at the top. The attendance status for each player is shown — tap HERE or ABSENT to update. The subtitle shows how many players are present.</p>
       </div>
 
       <div>
-        <div style="font-family:var(--font-display);font-size:18px;letter-spacing:.08em;color:var(--royal-dark);margin-bottom:8px">LIMITATIONS TO KNOW</div>
+        <div style="${S}">DEPTH CHART</div>
+        <p>A period-by-period routing table for multi-position players in your group. Each column is a player, each row is a period. Highlighted cells show when that player reports to your group. Useful for knowing which players to expect and when during Combo and Team periods.</p>
+      </div>
+
+      <div>
+        <div style="${S}">REP COUNTER</div>
+        <p>A tally of reps earned by each player for the current day. Sorted by most reps so you can immediately see who is getting the most work and who has zero reps. Position coaches see only their group. ${HC} sees the full roster.</p>
+        <p>Reps are tracked by tapping player chips on the Sideline view. The Rep Counter view shows the full leaderboard with a load bar. Orange bar = most reps in the group. ${HC} can reset the day's reps with the RESET DAY button.</p>
+        <p>Rep data is stored per day — switching to Tuesday loads Tuesday's reps, Monday's data is preserved separately.</p>
+      </div>
+
+      <div>
+        <div style="${S}">WHITEBOARD</div>
+        <p>A shared drawing canvas for live play diagrams. Any coach can draw. All coaches see the drawing update in real time. The field background shows yard lines and a dashed line of scrimmage.</p>
+        <ul style="margin:6px 0 6px 20px;display:flex;flex-direction:column;gap:5px">
+          <li><strong>✏ PEN</strong> — freehand draw with finger or mouse</li>
+          <li><strong>╱ LINE</strong> — drag to draw a straight route line</li>
+          <li><strong>○ CIRCLE</strong> — drag to draw a player circle or zone</li>
+          <li><strong>⌫ ERASE</strong> — erase strokes</li>
+          <li><strong>🏈</strong> — tap anywhere to stamp a football</li>
+          <li><strong>✕ CLEAR</strong> — wipes the board for all coaches</li>
+        </ul>
+        <p>Six colors and four brush sizes are available in the toolbar.</p>
+      </div>
+
+      <div>
+        <div style="${S}">EDIT ROSTER ${HC}</div>
+        <p>Add, edit, and remove players. Tap <strong>+ ADD PLAYER</strong> or <strong>EDIT</strong> on any row. For each player you can set:</p>
+        <ul style="margin:6px 0 6px 20px;display:flex;flex-direction:column;gap:5px">
+          <li><strong>Jersey number and name</strong></li>
+          <li><strong>Primary position</strong> — their main group</li>
+          <li><strong>Secondary positions</strong> — groups they also participate in</li>
+          <li><strong>Depth chart rank</strong> — 1st Team, 2nd Team, 3rd Team, or Scout per position</li>
+          <li><strong>Period routing</strong> — which group they join for Indy, Combo, and Team periods (only shown for multi-position players)</li>
+          <li><strong>Weak areas</strong> — flagged in position coach cards and the Sideline watch list</li>
+        </ul>
+        <p><strong>⬆ IMPORT FILE</strong> — upload a CSV or XLSX file to load your roster in bulk. Choose Replace All (wipes current roster) or Add / Update (merges by jersey number). Download the template from Help → Roster Template.</p>
+        <p><strong>✓ ALL PRESENT</strong> — resets all players to present. Use at the start of each practice before taking attendance.</p>
+      </div>
+
+      <div>
+        <div style="${S}">EDIT SCHEDULE ${HC}</div>
+        <p>Set the practice structure — period times, names, types (Warmup / Indy / Combo / Team), and unit assignments (All / 1st Team / 2nd Team / 3rd Team / Scout). The same schedule applies every day — what changes daily is the drills entered in the Practice Script.</p>
+        <p>Use ▲▼ to reorder periods, + ADD PERIOD to add new ones, and <strong>SAVE & APPLY</strong> to push changes to the script immediately.</p>
+      </div>
+
+      <div>
+        <div style="${S}">LIMITATIONS TO KNOW</div>
         <ul style="margin:6px 0 6px 20px;display:flex;flex-direction:column;gap:8px">
-          <li><strong>One schedule for all days:</strong> The same period times apply every day. Edit the schedule before practice if your structure changes.</li>
-          <li><strong>Sample roster:</strong> The 100 placeholder players need to be replaced with your real Whiteland Warriors roster using Edit Roster.</li>
-          <li><strong>No login security:</strong> Anyone with the URL can log in as any role. Share the URL only with your staff. PIN codes per role are a possible future improvement.</li>
-          <li><strong>iPhone notifications:</strong> Require iOS 16.4+ and the app saved to the home screen (tap Share → Add to Home Screen). This is an Apple limitation.</li>
-          <li><strong>Printing:</strong> Use Print / Save PDF in the Export section. Choose Landscape orientation and Save as PDF for the cleanest result.</li>
+          <li><strong>One schedule for all days:</strong> The same period structure applies Monday through Sunday. Edit it before practice if your schedule changes.</li>
+          <li><strong>No login security:</strong> Anyone with the URL can log in as any role. Share the link only with your staff.</li>
+          <li><strong>iPhone notifications:</strong> Require iOS 16.4+ and the app saved to the home screen — tap Share → Add to Home Screen. This is an Apple limitation.</li>
+          <li><strong>Rep tracking is manual:</strong> Reps are counted by tapping during practice. The more consistently coaches tap, the more accurate the data.</li>
+          <li><strong>Firebase required for sync:</strong> Without a Firebase connection each coach sees only their own local version. All real-time features require the app to be deployed online.</li>
         </ul>
       </div>
 
