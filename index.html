@@ -2371,35 +2371,34 @@ let practiceStartedThisSession = false;
 
 function initSidelineSync() {
   if (!db) return;
-  onValue(ref(db, 'playscript/practiceStart'), snap => {
-    const val = snap.val();
-    if (val) {
-      // HC: only accept values written by THIS session (practiceStartedThisSession)
-      // This prevents the local Firebase cache from loading stale values
-      if (currentRole === 'HC' && !practiceStartedThisSession) {
-        return; // ignore — HC hasn't started practice yet this session
-      }
-      if (Number(val) !== practiceStartTime) {
-        practiceStartTime = Number(val);
-        if (currentView === 'sideline') {
-          renderSideline(document.getElementById('mainContent'));
-        } else {
-          renderAndTickSideline();
+
+  if (currentRole !== 'HC') {
+    // Position coaches read from Firebase
+    onValue(ref(db, 'playscript/practiceStart'), snap => {
+      const val = snap.val();
+      if (val) {
+        if (Number(val) !== practiceStartTime) {
+          practiceStartTime = Number(val);
+          if (currentView === 'sideline') {
+            renderSideline(document.getElementById('mainContent'));
+          } else {
+            renderAndTickSideline();
+          }
         }
+      } else {
+        practiceStartTime = null;
+        if (sidelineInterval) { clearInterval(sidelineInterval); sidelineInterval = null; }
       }
-    } else {
-      practiceStartTime = null;
-      practiceStartedThisSession = false;
-      if (sidelineInterval) { clearInterval(sidelineInterval); sidelineInterval = null; }
-    }
-    if (currentView === 'sideline') renderSidelineControls();
-  });
-  onValue(ref(db, 'playscript/practicePaused'), snap => {
-    const val = snap.val();
-    if (currentRole === 'HC' && !practiceStartedThisSession) return;
-    practicePausedAt = val ? Number(val) : null;
-    if (currentView === 'sideline') renderSidelineControls();
-  });
+      if (currentView === 'sideline') renderSidelineControls();
+    });
+    onValue(ref(db, 'playscript/practicePaused'), snap => {
+      const val = snap.val();
+      practicePausedAt = val ? Number(val) : null;
+      if (currentView === 'sideline') renderSidelineControls();
+    });
+  }
+  // HC never reads practiceStart from Firebase - avoids stale cache entirely
+  // HC only writes to Firebase when starting/pausing/resuming/resetting
 }
 
 window.startPractice  = startPractice;
