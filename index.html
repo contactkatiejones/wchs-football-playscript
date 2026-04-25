@@ -1612,11 +1612,6 @@ function doLogin(){
     });
     initRoster();
     initSidelineSync();
-    // Clear any stale practice state from previous sessions
-    remove(ref(db, 'playscript/practiceStart'));
-    remove(ref(db, 'playscript/practicePaused'));
-    practiceStartTime = null;
-    practicePausedAt  = null;
   }
 
   // Show Firebase sync badge if configured
@@ -2286,14 +2281,28 @@ function initSidelineSync() {
   if (!db) return;
   onValue(ref(db, 'playscript/practiceStart'), snap => {
     const val = snap.val();
-    if (val && Number(val) !== practiceStartTime) {
-      practiceStartTime = Number(val);
-      if (currentView === 'sideline') {
-        renderSideline(document.getElementById('mainContent'));
-      } else {
-        renderAndTickSideline();
+    if (val) {
+      const ageMs = Date.now() - Number(val);
+      const fourHours = 4 * 60 * 60 * 1000;
+      if (ageMs > fourHours) {
+        // Stale — clear it so nobody loads a yesterday's session
+        remove(ref(db, 'playscript/practiceStart'));
+        remove(ref(db, 'playscript/practicePaused'));
+        practiceStartTime = null;
+        practicePausedAt  = null;
+        if (sidelineInterval) { clearInterval(sidelineInterval); sidelineInterval = null; }
+        if (currentView === 'sideline') renderSideline(document.getElementById('mainContent'));
+        return;
       }
-    } else if (!val) {
+      if (Number(val) !== practiceStartTime) {
+        practiceStartTime = Number(val);
+        if (currentView === 'sideline') {
+          renderSideline(document.getElementById('mainContent'));
+        } else {
+          renderAndTickSideline();
+        }
+      }
+    } else {
       practiceStartTime = null;
       if (sidelineInterval) { clearInterval(sidelineInterval); sidelineInterval = null; }
     }
