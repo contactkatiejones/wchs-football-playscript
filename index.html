@@ -747,16 +747,16 @@ html, body {
 
 .export-btn {
   padding: 7px 16px;
-  background: var(--orange);
-  border: none;
-  color: #fff;
+  background: #e8e8e8;
+  border: 1px solid #ccc;
+  color: #111;
   font-family: var(--font-display);
   font-size: 14px;
   letter-spacing: .1em;
   cursor: pointer;
   transition: all .12s;
 }
-.export-btn:hover { background: var(--orange-mid); }
+.export-btn:hover { background: #d4d4d4; }
 
 /* Setup guide — orange accent on dark */
 .setup-guide {
@@ -1083,7 +1083,7 @@ html, body {
 <div id="app">
   <div class="topbar">
     <button class="menu-toggle" onclick="window.toggleSidebar()" aria-label="Menu">☰</button>
-    <span class="topbar-logo">WW <span style="color:var(--orange-mid)">FOOTBALL</span></span>
+    <span class="topbar-logo">WCHS <span style="color:var(--orange-mid)">FOOTBALL</span></span>
     <span class="topbar-day" id="topbarDay">MONDAY</span>
     <span class="topbar-spacer"></span>
     <div class="live-badge"><div class="live-dot"></div>LIVE</div>
@@ -1622,6 +1622,12 @@ function render(){
 }
 
 // ── PILL HELPER ────────────────────────────────────────────────────────────
+const DAY_FULL = {Mon:"Monday",Tue:"Tuesday",Wed:"Wednesday",Thu:"Thursday",Fri:"Friday",Sat:"Saturday",Sun:"Sunday"};
+function dayLabel(day) {
+  var name = DAY_FULL[day] || day;
+  return '<span style="background:var(--orange);color:#000;font-weight:700;padding:1px 8px;font-family:var(--font-body)">' + name + '</span>';
+}
+
 function pill(type){
   const map={indy:'INDY',combo:'COMBO',team:'TEAM',tempo:'WARMUP'};
   return `<span class="period-pill pill-${type}">${map[type]||type.toUpperCase()}</span>`;
@@ -1721,7 +1727,7 @@ function renderScript(el){
   el.innerHTML=`
     <div class="content-header">
       <span class="content-title">PRACTICE SCRIPT</span>
-      <span class="content-meta">${currentDay.toUpperCase()} · 3:30–5:00 PM</span>
+      <span class="content-meta">${dayLabel(currentDay)} · 3:30–5:00 PM</span>
       <div style="flex:1"></div>
       <button class="export-btn" onclick="alert('Exports coach cards PDF with current edits')">EXPORT PDF</button>
     </div>
@@ -1790,7 +1796,7 @@ function renderMyGroup(el){
   el.innerHTML=`
     <div class="content-header">
       <span class="content-title">MY GROUP — ${pos}</span>
-      <span class="content-meta">${myPlayers.length} PLAYERS · ${currentDay.toUpperCase()}</span>
+      <span class="content-meta">${myPlayers.length} PLAYERS · ${dayLabel(currentDay)}</span>
     </div>
     ${myDrills}
     <div class="player-grid">${cards}</div>`;
@@ -1828,7 +1834,7 @@ function renderPlayers(el){
   el.innerHTML=`
     <div class="content-header">
       <span class="content-title">ROSTER</span>
-      <span class="content-meta">${shown.length} OF ${PLAYERS.length} PLAYERS · ${currentDay.toUpperCase()}</span>
+      <span class="content-meta">${shown.length} OF ${PLAYERS.length} PLAYERS · ${dayLabel(currentDay)}</span>
     </div>
     <div class="filter-bar">${btns}</div>
     <div class="roster-table-wrap">
@@ -1866,7 +1872,7 @@ function renderSideline(el){
   el.innerHTML=`
     <div class="content-header">
       <span class="content-title">SIDELINE</span>
-      <span class="content-meta">${pos} COACH · ${currentDay.toUpperCase()}</span>
+      <span class="content-meta">${pos} COACH · ${dayLabel(currentDay)}</span>
     </div>
     <div class="mobile-view">
       <div class="period-now">
