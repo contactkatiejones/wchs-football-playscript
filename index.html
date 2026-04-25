@@ -949,6 +949,106 @@ html, body {
 .sched-save-btn:hover { background:var(--orange-mid); }
 .sched-note { font-size:11px; color:var(--ink3); font-family:var(--font-body); }
 
+/* ══════════════════════════════════════════════════════
+   MOBILE — full responsive overhaul
+   Breakpoint: 700px and below
+   ══════════════════════════════════════════════════════ */
+@media (max-width: 700px) {
+
+  /* ── TOPBAR ── */
+  .topbar { padding: 0 10px; gap: 8px; height: 48px; }
+  .topbar-day { display: none; }
+  .presence-avatars { display: none; }
+  #fbStatus { display: none !important; }
+  .role-badge { font-size: 11px; padding: 2px 7px; }
+  .topbar-logo { font-size: 17px; letter-spacing: 2px; }
+
+  /* ── SIDEBAR — slide-over overlay on mobile ── */
+  .main { position: relative; }
+  .sidebar {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 220px;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform .22s ease;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.35);
+  }
+  .sidebar.open { transform: translateX(0); }
+
+  /* Overlay behind open sidebar */
+  .sidebar-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 99;
+  }
+  .sidebar-overlay.visible { display: block; }
+
+  /* Menu toggle button in topbar */
+  .menu-toggle {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  /* ── CONTENT ── */
+  .content { padding: 12px; gap: 12px; }
+  .content-title { font-size: 20px; }
+  .content-header { padding-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+
+  /* ── STATS BAR ── */
+  .stats-bar { grid-template-columns: repeat(2,1fr); }
+  .stat-val { font-size: 22px; }
+
+  /* ── SCRIPT TABLE ── */
+  .script-wrap { font-size: 11px; }
+  .drill-input { min-width: 70px; font-size: 10px; }
+
+  /* ── ROSTER TABLES ── */
+  .roster-table-wrap { font-size: 11px; }
+  .roster-toolbar { flex-direction: column; align-items: stretch; gap: 6px; }
+  .roster-search { max-width: 100%; }
+  .roster-pos-filter { flex-wrap: wrap; }
+
+  /* ── FILTER BAR ── */
+  .filter-bar { flex-wrap: wrap; gap: 4px; }
+  .filter-btn { font-size: 11px; padding: 4px 9px; }
+
+  /* ── LOGIN ── */
+  .login-logo { font-size: 28px; }
+  .login-sub { font-size: 13px !important; }
+  .role-card-hc { padding: 14px 12px; }
+  .role-name-hc { font-size: 20px; }
+  .login-btn { font-size: 16px; padding: 12px 32px; }
+
+  /* ── MODAL ── */
+  .modal-overlay { padding: .5rem; align-items: flex-end; }
+  .modal-box { max-height: 92vh; border-radius: 0; border-top-left-radius: 8px; border-top-right-radius: 8px; }
+  .modal-body { padding: 14px; gap: 14px; }
+  .field-row { grid-template-columns: 1fr 1fr; }
+
+  /* ── SCHEDULE EDITOR ── */
+  .sched-table-wrap { font-size: 11px; }
+  .sched-input { font-size: 11px; }
+
+  /* ── ACTIVITY FEED ── */
+  .activity-feed { display: none; }
+
+  /* ── SIDELINE ── */
+  .mobile-view { max-width: 100%; }
+}
+
+/* Desktop: hide menu toggle */
+.menu-toggle { display: none; }
 .hidden { display: none !important; }
 </style>
 <!-- Firebase compat SDK — loads synchronously, no CORS issues -->
@@ -982,6 +1082,7 @@ html, body {
 <!-- ── APP ── -->
 <div id="app">
   <div class="topbar">
+    <button class="menu-toggle" onclick="window.toggleSidebar()" aria-label="Menu">☰</button>
     <span class="topbar-logo">WW <span style="color:var(--orange-mid)">FOOTBALL</span></span>
     <span class="topbar-day" id="topbarDay">MONDAY</span>
     <span class="topbar-spacer"></span>
@@ -992,7 +1093,8 @@ html, body {
     <button onclick="window.doLogout()" style="padding:4px 10px;background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.45);font-family:var(--font-display);font-size:12px;letter-spacing:.08em;cursor:pointer;transition:all .12s" onmouseover="this.style.color='#fff';this.style.borderColor='rgba(255,255,255,0.5)'" onmouseout="this.style.color='rgba(255,255,255,0.45)';this.style.borderColor='rgba(255,255,255,0.2)'">&#8592; SWITCH ROLE</button>
   </div>
   <div class="main">
-    <div class="sidebar">
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="window.toggleSidebar()"></div>
+    <div class="sidebar" id="sidebar">
       <div class="sidebar-section">Views</div>
       <div class="sidebar-item active" onclick="window.setView('script')" id="nav-script">
         Practice Script
@@ -1474,11 +1576,25 @@ function startPeerActivity(){
 }
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  if (!sidebar) return;
+  const isOpen = sidebar.classList.contains('open');
+  sidebar.classList.toggle('open', !isOpen);
+  overlay.classList.toggle('visible', !isOpen);
+}
+
 function setView(v){
   currentView=v;
   ['script','mygroup','players','sideline','roster','schedule'].forEach(n=>{
     document.getElementById('nav-'+n)?.classList.toggle('active',n===v);
   });
+  // Auto-close sidebar on mobile after selecting a view
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  if (sidebar) sidebar.classList.remove('open');
+  if (overlay) overlay.classList.remove('visible');
   render();
 }
 function setDay(day,el){
@@ -1487,6 +1603,11 @@ function setDay(day,el){
   el.classList.add('active');
   const DAY_NAMES={'Mon':'MONDAY','Tue':'TUESDAY','Wed':'WEDNESDAY','Thu':'THURSDAY','Fri':'FRIDAY','Sat':'SATURDAY','Sun':'SUNDAY'};
   document.getElementById('topbarDay').textContent=(DAY_NAMES[day]||day);
+  // Auto-close sidebar on mobile
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  if (sidebar) sidebar.classList.remove('open');
+  if (overlay) overlay.classList.remove('visible');
   render();
 }
 
@@ -2169,6 +2290,7 @@ window.doLogin      = doLogin;
 window.doLogout     = doLogout;
 window.setView      = setView;
 window.setDay       = setDay;
+window.toggleSidebar = toggleSidebar;
 window.updateDrill  = updateDrill;
 window.setPlayerFilter    = setPlayerFilter;
 window.renderPlayers      = renderPlayers;
