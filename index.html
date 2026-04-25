@@ -1649,14 +1649,20 @@ function doLogin(){
         if (currentView === 'script') render();
       }
     });
-    // HC always clears any stale practice clock on login
-    // Position coaches sync whatever the HC has started
+    // HC always clears stale practice clock on login, THEN starts sync
+    // Using Promise.all ensures the removes complete before onValue subscribes
     if (currentRole === 'HC') {
-      remove(ref(db, 'playscript/practiceStart'));
-      remove(ref(db, 'playscript/practicePaused'));
+      Promise.all([
+        remove(ref(db, 'playscript/practiceStart')),
+        remove(ref(db, 'playscript/practicePaused'))
+      ]).then(() => {
+        initRoster();
+        initSidelineSync();
+      });
+    } else {
+      initRoster();
+      initSidelineSync();
     }
-    initRoster();
-    initSidelineSync();
   }
 
   // Show Firebase sync badge if configured
