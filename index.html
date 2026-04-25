@@ -411,7 +411,7 @@ html, body {
 .content-meta {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--ink3);
+  color: #000;
   letter-spacing: .02em;
   background: var(--surface2);
   padding: 3px 8px;
@@ -960,7 +960,7 @@ html, body {
   .topbar-day { display: none; }
   .presence-avatars { display: none; }
   #fbStatus { display: none !important; }
-  .role-badge { font-size: 11px; padding: 2px 7px; }
+  .role-badge { font-size: 14px; padding: 3px 9px; }
   .topbar-logo { font-size: 17px; letter-spacing: 2px; }
 
   /* ── SIDEBAR — slide-over overlay on mobile ── */
@@ -1050,6 +1050,62 @@ html, body {
 /* Desktop: hide menu toggle */
 .menu-toggle { display: none; }
 .hidden { display: none !important; }
+/* ══════════════════════════════════════════════════════
+   PRINT STYLES — clean layout for PDF / paper
+   ══════════════════════════════════════════════════════ */
+@media print {
+  /* Hide everything except the main content */
+  #login-screen        { display: none !important; }
+  .topbar              { display: none !important; }
+  .sidebar             { display: none !important; }
+  .sidebar-overlay     { display: none !important; }
+  .menu-toggle         { display: none !important; }
+  .activity-feed       { display: none !important; }
+  .setup-guide         { display: none !important; }
+  .export-btn          { display: none !important; }
+  .filter-bar          { display: none !important; }
+  .roster-toolbar      { display: none !important; }
+  .content-header button { display: none !important; }
+
+  /* Full-width content, no scroll container */
+  html, body           { background: #fff !important; }
+  #app                 { display: block !important; height: auto !important; }
+  .main                { display: block !important; overflow: visible !important; }
+  .content             { overflow: visible !important; padding: 0 !important; gap: 10px !important; background: #fff !important; }
+
+  /* Tables — expand to full width, no horizontal scroll */
+  .script-wrap, .roster-table-wrap,
+  .sched-table-wrap    { overflow: visible !important; border: none !important; }
+  .script-table,
+  .roster-table,
+  .sched-table         { min-width: 0 !important; width: 100% !important; font-size: 9pt !important; }
+  .script-table th,
+  .script-table td,
+  .roster-table th,
+  .roster-table td     { padding: 4pt 6pt !important; }
+
+  /* Inputs — show as plain text */
+  .drill-input         { border: none !important; background: transparent !important; font-size: 9pt !important; }
+  .drill-input:disabled { color: #000 !important; }
+
+  /* Colors — keep brand but make sure ink is dark */
+  .content-title       { color: #000 !important; }
+  .content-meta        { color: #000 !important; background: none !important; border: none !important; }
+
+  /* Page setup */
+  @page {
+    size: landscape;
+    margin: 1.2cm;
+  }
+
+  /* Avoid breaking inside rows */
+  tr { page-break-inside: avoid; }
+  .player-card { page-break-inside: avoid; }
+
+  /* Stats bar */
+  .stats-bar { display: none !important; }
+}
+
 </style>
 <!-- Firebase compat SDK — loads synchronously, no CORS issues -->
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -1090,7 +1146,7 @@ html, body {
   <div id="fbStatus" style="font-size:10px;font-family:var(--font-mono);padding:3px 8px;border-radius:20px;background:rgba(76,175,125,0.12);color:var(--rb);border:1px solid rgba(76,175,125,0.25);display:none">FIREBASE SYNCING</div>
     <div class="presence-avatars" id="presenceAvatars"></div>
     <span class="role-badge" id="roleBadge"></span>
-    <button onclick="window.doLogout()" style="padding:4px 10px;background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.45);font-family:var(--font-display);font-size:12px;letter-spacing:.08em;cursor:pointer;transition:all .12s" onmouseover="this.style.color='#fff';this.style.borderColor='rgba(255,255,255,0.5)'" onmouseout="this.style.color='rgba(255,255,255,0.45)';this.style.borderColor='rgba(255,255,255,0.2)'">&#8592; SWITCH ROLE</button>
+    <button onclick="window.doLogout()" style="padding:4px 10px;background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.45);font-family:var(--font-display);font-size:15px;letter-spacing:.06em;cursor:pointer;transition:all .12s" onmouseover="this.style.color='#fff';this.style.borderColor='rgba(255,255,255,0.5)'" onmouseout="this.style.color='rgba(255,255,255,0.45)';this.style.borderColor='rgba(255,255,255,0.2)'">&#8592; SWITCH ROLE</button>
   </div>
   <div class="main">
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="window.toggleSidebar()"></div>
@@ -1119,8 +1175,8 @@ html, body {
       <div class="day-item" onclick="window.setDay('Sat',this)">Saturday</div>
       <div class="day-item" onclick="window.setDay('Sun',this)">Sunday</div>
       <div class="sidebar-section">Export</div>
-      <div class="sidebar-item" onclick="alert('In the full app this exports coach cards PDF')">
-        Print Cards
+      <div class="sidebar-item" onclick="window.doPrint()">
+        Print / Save PDF
       </div>
     </div>
     <div class="content" id="mainContent"></div>
@@ -1625,7 +1681,7 @@ function render(){
 const DAY_FULL = {Mon:"Monday",Tue:"Tuesday",Wed:"Wednesday",Thu:"Thursday",Fri:"Friday",Sat:"Saturday",Sun:"Sunday"};
 function dayLabel(day) {
   var name = DAY_FULL[day] || day;
-  return '<span style="background:var(--orange);color:#000;font-weight:700;padding:1px 8px;font-family:var(--font-body)">' + name + '</span>';
+  return '<span style="color:var(--orange);font-weight:700;font-family:var(--font-body)">' + name + '</span>';
 }
 
 function pill(type){
@@ -1729,11 +1785,11 @@ function renderScript(el){
       <span class="content-title">PRACTICE SCRIPT</span>
       <span class="content-meta">${dayLabel(currentDay)} · 3:30–5:00 PM</span>
       <div style="flex:1"></div>
-      <button class="export-btn" onclick="alert('Exports coach cards PDF with current edits')">EXPORT PDF</button>
+      <button class="export-btn" onclick="window.doPrint()">PRINT / SAVE PDF</button>
     </div>
     ${stats}
     ${setupGuide}
-    <div style="font-size:11px;color:var(--ink2);font-family:var(--font-mono)">${!isHC?'Your editable indy cells are highlighted in bold':''}</div>
+    <div style="font-size:11px;color:var(--ink2);font-family:var(--font-mono)">Edit cells in bold.</div>
     ${table}
     ${feed}`;
 }
@@ -2292,6 +2348,12 @@ function setRosterPosFilter(pos) { rosterPosFilter = pos; render(); }
 document.getElementById('mainContent').innerHTML='';
 
 // Expose functions needed by inline HTML onclick= attributes
+
+function doPrint() {
+  // Show a brief message then print
+  window.print();
+}
+window.doPrint = doPrint;
 window.doLogin      = doLogin;
 window.doLogout     = doLogout;
 window.setView      = setView;
