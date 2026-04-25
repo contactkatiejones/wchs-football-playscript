@@ -1090,6 +1090,40 @@ html, body {
 .notif-close { background: none; border: none; color: rgba(255,255,255,0.7); font-size: 18px; cursor: pointer; padding: 0 4px; flex-shrink: 0; }
 .notif-close:hover { color: #fff; }
 
+/* ── DAY DROPDOWN ── */
+.day-dropdown-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.day-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: var(--royal-dark);
+  border: 1px solid var(--orange);
+  border-top: 3px solid var(--orange);
+  min-width: 140px;
+  z-index: 500;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  display: none;
+}
+.day-dropdown.open { display: block; }
+.day-dropdown-item {
+  padding: 10px 14px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: .08em;
+  color: rgba(255,255,255,0.65);
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: all .1s;
+}
+.day-dropdown-item:hover { color: #fff; background: rgba(255,255,255,0.07); }
+.day-dropdown-item.active { color: var(--orange); border-left-color: var(--orange); }
+.topbar-day { cursor: pointer; user-select: none; }
+.topbar-day:hover { border-color: var(--orange-mid); }
+
 .menu-toggle { display: none; }
 .hidden { display: none !important; }
 /* ══════════════════════════════════════════════════════
@@ -1190,7 +1224,18 @@ html, body {
   <div class="topbar">
     <button class="menu-toggle" onclick="window.toggleSidebar()" aria-label="Menu">☰</button>
     <span class="topbar-logo">WCHS <span>FOOTBALL</span></span>
-    <span class="topbar-day" id="topbarDay">MONDAY</span>
+    <div class="day-dropdown-wrap" id="dayDropdownWrap">
+      <span class="topbar-day" id="topbarDay" onclick="window.toggleDayDropdown()">MONDAY</span>
+      <div class="day-dropdown" id="dayDropdown">
+        <div class="day-dropdown-item active" onclick="window.pickDay('Mon',this)">Monday</div>
+        <div class="day-dropdown-item" onclick="window.pickDay('Tue',this)">Tuesday</div>
+        <div class="day-dropdown-item" onclick="window.pickDay('Wed',this)">Wednesday</div>
+        <div class="day-dropdown-item" onclick="window.pickDay('Thu',this)">Thursday</div>
+        <div class="day-dropdown-item" onclick="window.pickDay('Fri',this)">Friday</div>
+        <div class="day-dropdown-item" onclick="window.pickDay('Sat',this)">Saturday</div>
+        <div class="day-dropdown-item" onclick="window.pickDay('Sun',this)">Sunday</div>
+      </div>
+    </div>
     <span class="topbar-spacer"></span>
     <div class="live-badge"><div class="live-dot"></div>LIVE SYNC</div>
     <div class="presence-avatars" id="presenceAvatars"></div>
@@ -1215,18 +1260,12 @@ html, body {
       </div>
       <div id="nav-roster-placeholder"></div>
       <div id="nav-schedule-placeholder"></div>
-      <div class="sidebar-section">Day</div>
-      <div class="day-item active" onclick="window.setDay('Mon',this)">Monday</div>
-      <div class="day-item" onclick="window.setDay('Tue',this)">Tuesday</div>
-      <div class="day-item" onclick="window.setDay('Wed',this)">Wednesday</div>
-      <div class="day-item" onclick="window.setDay('Thu',this)">Thursday</div>
-      <div class="day-item" onclick="window.setDay('Fri',this)">Friday</div>
-      <div class="day-item" onclick="window.setDay('Sat',this)">Saturday</div>
-      <div class="day-item" onclick="window.setDay('Sun',this)">Sunday</div>
-      <div class="sidebar-section">Export</div>
-      <div class="sidebar-item" onclick="window.doPrint()">
-        Print / Save PDF
+
+      <div class="sidebar-section">Help</div>
+      <div class="sidebar-item" onclick="window.setView('guide')">
+        User Guide
       </div>
+
     </div>
     <div class="content" id="mainContent"></div>
   </div>
@@ -1687,7 +1726,7 @@ function toggleSidebar() {
 
 function setView(v){
   currentView=v;
-  ['script','mygroup','players','sideline','roster','schedule'].forEach(n=>{
+  ['script','mygroup','players','sideline','roster','schedule','guide'].forEach(n=>{
     document.getElementById('nav-'+n)?.classList.toggle('active',n===v);
   });
   // Auto-close sidebar on mobile after selecting a view
@@ -1697,10 +1736,42 @@ function setView(v){
   if (overlay) overlay.classList.remove('visible');
   render();
 }
+function toggleDayDropdown() {
+  const dd = document.getElementById('dayDropdown');
+  if (dd) dd.classList.toggle('open');
+}
+
+function closeDayDropdown() {
+  const dd = document.getElementById('dayDropdown');
+  if (dd) dd.classList.remove('open');
+}
+
+function pickDay(day, el) {
+  // Update active state in dropdown
+  document.querySelectorAll('.day-dropdown-item').forEach(d => d.classList.remove('active'));
+  if (el) el.classList.add('active');
+  closeDayDropdown();
+  // Reuse setDay logic — find matching sidebar day-item to keep in sync
+  const sidebarItem = [...document.querySelectorAll('.day-item')].find(d => d.onclick && d.onclick.toString().includes("'" + day + "'"));
+  setDay(day, sidebarItem || document.createElement('div'));
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+  const wrap = document.getElementById('dayDropdownWrap');
+  if (wrap && !wrap.contains(e.target)) closeDayDropdown();
+});
+
 function setDay(day,el){
   currentDay=day;
   document.querySelectorAll('.day-item').forEach(d=>d.classList.remove('active'));
-  el.classList.add('active');
+  if (el) el.classList.add('active');
+  // Sync dropdown active state
+  const DAY_KEYS = {Monday:'Mon',Tuesday:'Tue',Wednesday:'Wed',Thursday:'Thu',Friday:'Fri',Saturday:'Sat',Sunday:'Sun'};
+  document.querySelectorAll('.day-dropdown-item').forEach(d => {
+    const key = DAY_KEYS[d.textContent.trim()];
+    d.classList.toggle('active', key === day);
+  });
   const DAY_NAMES={'Mon':'MONDAY','Tue':'TUESDAY','Wed':'WEDNESDAY','Thu':'THURSDAY','Fri':'FRIDAY','Sat':'SATURDAY','Sun':'SUNDAY'};
   document.getElementById('topbarDay').textContent=(DAY_NAMES[day]||day);
   // Auto-close sidebar on mobile
@@ -1719,6 +1790,7 @@ function render(){
   else if(currentView==='sideline') renderSideline(el);
   else if(currentView==='roster')  renderRosterEditor(el);
   else if(currentView==='schedule') renderScheduleEditor(el);
+  else if(currentView==='guide')    renderUserGuide(el);
 }
 
 // ── PILL HELPER ────────────────────────────────────────────────────────────
@@ -1959,8 +2031,8 @@ function timeStrToMins(t) {
 }
 
 // Given practiceStartTime (ms), return {periodIdx, secsLeft, secsDone, totalSecs}
-function calcCurrentPeriod(startMs) {
-  const elapsedSecs = Math.floor((Date.now() - Number(startMs)) / 1000);
+function calcCurrentPeriod(startMs, nowMs) {
+  const elapsedSecs = Math.floor(((nowMs || Date.now()) - Number(startMs)) / 1000);
   if (elapsedSecs < 0) return null;
 
   // Build cumulative seconds for each period based on schedule durations
@@ -2162,7 +2234,7 @@ function renderAndTickSideline() {
   sidelineInterval = setInterval(() => {
     // Always check for notifications even if not on sideline view
     if (practiceStartTime && !practicePausedAt) {
-      const st = calcCurrentPeriod(practiceStartTime);
+      const st = practicePausedAt ? calcCurrentPeriod(practiceStartTime, practicePausedAt) : calcCurrentPeriod(practiceStartTime);
       if (st) checkNotifications(st);
     }
     if (currentView !== 'sideline') return;
@@ -2186,9 +2258,9 @@ function tickSideline() {
     return;
   }
 
-  // When paused, freeze display at the moment pause was pressed
+  // When paused, freeze by using the pause moment as "now"
   const displayStatus = practicePausedAt
-    ? calcCurrentPeriod(practiceStartTime + (Date.now() - practicePausedAt))
+    ? calcCurrentPeriod(practiceStartTime, practicePausedAt)
     : status;
 
   if (displayStatus.periodIdx === -1) {
@@ -2720,10 +2792,114 @@ function doPrint() {
   window.print();
 }
 window.doPrint = doPrint;
-window.doLogin      = doLogin;
+// ── USER GUIDE ─────────────────────────────────────────────────────────────
+function renderUserGuide(el) {
+  el.innerHTML = `
+    <div class="content-header">
+      <span class="content-title">USER GUIDE</span>
+      
+    </div>
+    <div style="max-width:700px;font-family:var(--font-body);font-size:14px;line-height:1.75;color:#000;display:flex;flex-direction:column;gap:28px">
+
+      <div>
+        <div style="font-family:var(--font-display);font-size:18px;letter-spacing:.08em;color:var(--royal-dark);margin-bottom:8px">WHAT THIS APP IS</div>
+        <p>This is a live, shared practice planning tool for your entire coaching staff. Every coach on your staff logs in from their own phone, tablet, or computer and sees the same practice script in real time. When the head coach updates a drill, they see it instantly. When the head coach starts the practice clock, every phone starts counting down together.</p>
+        <p>The app works in any web browser — no download, no install.</p>
+      </div>
+
+      <div>
+        <div style="font-family:var(--font-display);font-size:18px;letter-spacing:.08em;color:var(--royal-dark);margin-bottom:8px">LOGGING IN</div>
+        <p>When you open the app you'll see the login screen. Your tile is at the top, separate from the position coaches. Tap your Coaching Role, then tap <strong>LOGIN</strong>.</p>
+        <p>Position coaches see their own tile in the 3×3 grid below yours. Each coach only sees what's relevant to their role — the head coach sees everything.</p>
+      </div>
+
+      <div>
+        <div style="font-family:var(--font-display);font-size:18px;letter-spacing:.08em;color:var(--royal-dark);margin-bottom:8px">THE SIDEBAR MENU</div>
+        <p>The left sidebar is your navigation. On a phone, tap the <strong>☰</strong> button in the top left to open it, then tap any item and it closes automatically.</p>
+        <p><strong>Views:</strong></p>
+        <ul style="margin:6px 0 6px 20px;display:flex;flex-direction:column;gap:5px">
+          <li><strong>Practice Script</strong> — the full weekly script grid, all positions and all periods</li>
+          <li><strong>My Group</strong> — what each position coach sees for their players on the current day</li>
+          <li><strong>Roster</strong> — the full player list, filterable by position</li>
+          <li><strong>Sideline</strong> — the live practice clock</li>
+          <li><strong>Edit Roster</strong> — add, edit, and remove players <em>(Head Coach only)</em></li>
+          <li><strong>Edit Schedule</strong> — change practice times and period names <em>(Head Coach only)</em></li>
+        </ul>
+        <p><strong>Day:</strong> Tap any day of the week to switch the script view. Saturday and Sunday are available for weekend sessions.</p>
+      </div>
+
+      <div>
+        <div style="font-family:var(--font-display);font-size:18px;letter-spacing:.08em;color:var(--royal-dark);margin-bottom:8px">THE PRACTICE SCRIPT</div>
+        <p>This is the main planning view. It shows all your practice periods as rows, and all position groups as columns. You can scroll right to see all groups.</p>
+        <p>As Head Coach you can edit every cell. Tap any cell and type the drill. Position coaches can only edit their own group's cells during Indy periods — their cells appear in bold so they know what they can touch.</p>
+        <p>Changes save automatically. Every coach sees your edits in real time if Firebase is connected. Without Firebase, each coach sees only their own local version.</p>
+      </div>
+
+      <div>
+        <div style="font-family:var(--font-display);font-size:18px;letter-spacing:.08em;color:var(--royal-dark);margin-bottom:8px">EDIT SCHEDULE</div>
+        <p>This is where you set your practice clock structure — the times, period names, and period types (Warmup, Indy, Combo, Team).</p>
+        <p><strong>Important:</strong> The schedule applies to every day of the week. It's the same time structure Monday through Sunday. What changes day to day is the drills you put in each cell of the Practice Script.</p>
+        <ul style="margin:6px 0 6px 20px;display:flex;flex-direction:column;gap:5px">
+          <li>Tap any start or end time and type a new one (format: 3:30, 4:15, etc.)</li>
+          <li>Tap any period name to rename it</li>
+          <li>Use ▲▼ to reorder periods</li>
+          <li>Use + ADD PERIOD to add new periods</li>
+          <li>Tap <strong>SAVE & APPLY</strong> when done — the practice script updates immediately</li>
+        </ul>
+      </div>
+
+      <div>
+        <div style="font-family:var(--font-display);font-size:18px;letter-spacing:.08em;color:var(--royal-dark);margin-bottom:8px">EDIT ROSTER</div>
+        <p>Here you manage your player database. Tap <strong>+ ADD PLAYER</strong> to add someone. Tap <strong>EDIT</strong> on any row to update their info. Tap <strong>REMOVE</strong> to delete them.</p>
+        <p>For each player you can set:</p>
+        <ul style="margin:6px 0 6px 20px;display:flex;flex-direction:column;gap:5px">
+          <li>Name and jersey number</li>
+          <li><strong>Primary position</strong> (solid blue — their main group)</li>
+          <li><strong>Secondary positions</strong> (blue outline — they also rep in these groups)</li>
+          <li><strong>Weak areas</strong> (flagged red — shows up on coach cards so position coaches know what to focus on)</li>
+        </ul>
+        <p>You can search by name or jersey number, or filter by position using the buttons at the top.</p>
+      </div>
+
+      <div>
+        <div style="font-family:var(--font-display);font-size:18px;letter-spacing:.08em;color:var(--royal-dark);margin-bottom:8px">SIDELINE — THE PRACTICE CLOCK</div>
+        <p>The Sideline view is the most important view during practice. Every coach should have this open on their phone.</p>
+        <p><strong>Starting practice:</strong> Only you see the green <strong>START PRACTICE</strong> button. Tap it and every coach's phone simultaneously starts counting down the first period. The timer is anchored to real clock time — if a coach opens the app 5 minutes into practice, they immediately see the correct period with the correct time remaining.</p>
+        <p><strong>Pausing:</strong> Tap the orange <strong>PAUSE</strong> button to freeze the clock on every phone at once. Tap <strong>RESUME</strong> (green) to pick up exactly where you left off. Tap <strong>RESET</strong> to clear the clock and start over.</p>
+        <p><strong>What coaches see:</strong></p>
+        <ul style="margin:6px 0 6px 20px;display:flex;flex-direction:column;gap:5px">
+          <li>The current period name and drill for their group</li>
+          <li>A countdown timer</li>
+          <li>An orange progress bar showing how far through the period you are</li>
+          <li>The next period coming up</li>
+        </ul>
+        <p><strong>Notifications:</strong> 15 seconds before a period ends, an orange banner slides down on every coach's phone. When a new period starts, a blue banner appears. Coaches who allow notifications will also get phone alerts in the background (Android works automatically; iPhone requires the app saved to the home screen first).</p>
+        <p><strong>What the clock does NOT do:</strong></p>
+        <ul style="margin:6px 0 6px 20px;display:flex;flex-direction:column;gap:5px">
+          <li>It does not automatically blow the horn — someone still needs to do that</li>
+          <li>It does not account for water breaks or unplanned stops unless you use Pause</li>
+          <li>It does not adjust if you run over on a period — use Pause/Reset to recalibrate</li>
+        </ul>
+      </div>
+
+      <div>
+        <div style="font-family:var(--font-display);font-size:18px;letter-spacing:.08em;color:var(--royal-dark);margin-bottom:8px">LIMITATIONS TO KNOW</div>
+        <ul style="margin:6px 0 6px 20px;display:flex;flex-direction:column;gap:8px">
+          <li><strong>One schedule for all days:</strong> The same period times apply every day. Edit the schedule before practice if your structure changes.</li>
+          <li><strong>Sample roster:</strong> The 100 placeholder players need to be replaced with your real Whiteland Warriors roster using Edit Roster.</li>
+          <li><strong>No login security:</strong> Anyone with the URL can log in as any role. Share the URL only with your staff. PIN codes per role are a possible future improvement.</li>
+          <li><strong>iPhone notifications:</strong> Require iOS 16.4+ and the app saved to the home screen (tap Share → Add to Home Screen). This is an Apple limitation.</li>
+          <li><strong>Printing:</strong> Use Print / Save PDF in the Export section. Choose Landscape orientation and Save as PDF for the cleanest result.</li>
+        </ul>
+      </div>
+
+    </div>`;
+}
 window.doLogout     = doLogout;
 window.setView      = setView;
 window.setDay       = setDay;
+window.toggleDayDropdown = toggleDayDropdown;
+window.pickDay      = pickDay;
 window.toggleSidebar = toggleSidebar;
 window.updateDrill  = updateDrill;
 window.setPlayerFilter    = setPlayerFilter;
