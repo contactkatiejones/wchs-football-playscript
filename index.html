@@ -1125,6 +1125,79 @@ html, body {
 .topbar-day:hover { border-color: var(--orange-mid); }
 
 .menu-toggle { display: none; }
+/* ── WHITEBOARD ── */
+.wb-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: calc(100vh - 140px);
+  min-height: 400px;
+}
+.wb-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.wb-tool-btn {
+  padding: 6px 14px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: .06em;
+  border: 2px solid var(--rule2);
+  background: var(--surface2);
+  color: #000;
+  cursor: pointer;
+  transition: all .1s;
+}
+.wb-tool-btn:hover { border-color: var(--royal-mid); }
+.wb-tool-btn.active { background: var(--royal-dark); color: #fff; border-color: var(--royal-dark); }
+.wb-tool-btn.clear-btn { background: #a83020; color: #fff; border-color: #a83020; margin-left: auto; }
+.wb-tool-btn.clear-btn:hover { background: #8a2518; }
+.wb-color-btn {
+  width: 28px; height: 28px;
+  border: 3px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform .1s;
+}
+.wb-color-btn.active { border-color: #000; transform: scale(1.2); }
+.wb-size-btn {
+  padding: 4px 10px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  border: 2px solid var(--rule2);
+  background: var(--surface2);
+  color: #000;
+  cursor: pointer;
+}
+.wb-size-btn.active { background: var(--royal-dark); color: #fff; border-color: var(--royal-dark); }
+.wb-canvas-wrap {
+  flex: 1;
+  position: relative;
+  border: 2px solid var(--rule2);
+  background: #2d5a1b;
+  overflow: hidden;
+  touch-action: none;
+}
+canvas#wbCanvas {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  cursor: crosshair;
+}
+.wb-live-badge {
+  position: absolute;
+  top: 8px; right: 8px;
+  background: rgba(0,0,0,0.6);
+  color: #6ee8a0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 3px 8px;
+  letter-spacing: .08em;
+  pointer-events: none;
+}
+
 .hidden { display: none !important; }
 /* ══════════════════════════════════════════════════════
    PRINT STYLES — clean layout for PDF / paper
@@ -1255,13 +1328,22 @@ html, body {
       <div class="sidebar-item" onclick="window.setView('players')" id="nav-players">
         Roster
       </div>
+      <div class="sidebar-item" onclick="window.setView('schedule_player')" id="nav-schedule-player">
+        My Schedule
+      </div>
       <div class="sidebar-item" onclick="window.setView('sideline')" id="nav-sideline">
         Sideline
+      </div>
+      <div class="sidebar-item" onclick="window.setView('whiteboard')" id="nav-whiteboard">
+        Whiteboard
       </div>
       <div id="nav-roster-placeholder"></div>
       <div id="nav-schedule-placeholder"></div>
 
       <div class="sidebar-section">Help</div>
+      <div class="sidebar-item" onclick="window.setView('template')">
+        Roster Template
+      </div>
       <div class="sidebar-item" onclick="window.setView('guide')">
         User Guide
       </div>
@@ -1453,6 +1535,63 @@ POS_LIST.forEach(pos=>{
 var currentRole='';
 var currentView='script';
 var currentDay='Mon';
+
+// ── ATTENDANCE ────────────────────────────────────────────────────────────
+// attendance[playerId] = true (present) | false (absent)
+// Stored per-day in Firebase at playscript/attendance/{day}
+var attendance = {}; // keyed by player id, true=present false=absent
+
+function isPresent(playerId) {
+  return attendance[playerId] !== false; // default true
+}
+
+function toggleAttendance(playerId) {
+  const current = isPresent(playerId);
+  attendance[playerId] = !current;
+  // Sync to Firebase
+  if (db) set(ref(db, 'playscript/attendance/' + currentDay + '/' + playerId), !current);
+  // Partial re-render of just the attendance cell
+  const cell = document.getElementById('att_' + playerId);
+  if (cell) cell.innerHTML = attendanceBtn(playerId);
+  // Update subtitle counts
+  updateAttendanceCounts();
+}
+
+function markAllPresent() {
+  PLAYERS.forEach(p => { attendance[p.id] = true; });
+  if (db) {
+    const obj = {};
+    PLAYERS.forEach(p => { obj[p.id] = true; });
+    set(ref(db, 'playscript/attendance/' + currentDay), obj);
+  }
+  render();
+}
+
+function updateAttendanceCounts() {
+  const presentCount = PLAYERS.filter(p => isPresent(p.id)).length;
+  const metaEl = document.getElementById('attendanceMeta');
+  if (metaEl) metaEl.textContent = presentCount + ' OF ' + PLAYERS.length + ' PRESENT';
+}
+
+function attendanceBtn(playerId) {
+  const present = isPresent(playerId);
+  return present
+    ? '<button onclick="window.toggleAttendance(\'' + playerId + '\')" style="padding:2px 10px;background:#1a7a40;color:#fff;border:none;font-family:var(--font-display);font-size:12px;letter-spacing:.04em;cursor:pointer;min-width:56px">HERE</button>'
+    : '<button onclick="window.toggleAttendance(\'' + playerId + '\')" style="padding:2px 10px;background:#a83020;color:#fff;border:none;font-family:var(--font-display);font-size:12px;letter-spacing:.04em;cursor:pointer;min-width:56px">ABSENT</button>';
+}
+
+function initAttendanceSync() {
+  if (!db) return;
+  onValue(ref(db, 'playscript/attendance/' + currentDay), snap => {
+    const val = snap.val();
+    if (val) {
+      Object.keys(val).forEach(id => { attendance[id] = val[id]; });
+    }
+    // Refresh attendance cells if on roster or edit roster view
+    if (currentView === 'players' || currentView === 'roster') render();
+    updateAttendanceCounts();
+  });
+}
 var selectedRoleId=null;
 var sidelineInterval=null;
 
@@ -1656,9 +1795,11 @@ function doLogin(){
       remove(ref(db, 'playscript/schedule'));
       initRoster();
       initSidelineSync();
+      initAttendanceSync();
     } else {
       initRoster();
       initSidelineSync();
+      initAttendanceSync();
     }
   }
 
@@ -1734,8 +1875,12 @@ function toggleSidebar() {
 }
 
 function setView(v){
+  // Clean up whiteboard listener when leaving
+  if (currentView === 'whiteboard' && v !== 'whiteboard') {
+    wbListener = null;
+  }
   currentView=v;
-  ['script','mygroup','players','sideline','roster','schedule','guide'].forEach(n=>{
+  ['script','mygroup','players','sideline','roster','schedule','guide','template','whiteboard','schedule_player'].forEach(n=>{
     document.getElementById('nav-'+n)?.classList.toggle('active',n===v);
   });
   // Auto-close sidebar on mobile after selecting a view
@@ -1773,6 +1918,7 @@ document.addEventListener('click', function(e) {
 
 function setDay(day,el){
   currentDay=day;
+  attendance = {}; // reset local attendance for new day
   document.querySelectorAll('.day-item').forEach(d=>d.classList.remove('active'));
   if (el) el.classList.add('active');
   // Sync dropdown active state
@@ -1788,6 +1934,7 @@ function setDay(day,el){
   const overlay = document.getElementById('sidebarOverlay');
   if (sidebar) sidebar.classList.remove('open');
   if (overlay) overlay.classList.remove('visible');
+  initAttendanceSync(); // load attendance for new day
   render();
 }
 
@@ -1799,7 +1946,10 @@ function render(){
   else if(currentView==='sideline') renderSideline(el);
   else if(currentView==='roster')  renderRosterEditor(el);
   else if(currentView==='schedule') renderScheduleEditor(el);
-  else if(currentView==='guide')    renderUserGuide(el);
+  else if(currentView==='guide')       renderUserGuide(el);
+  else if(currentView==='template')    renderTemplatePage(el);
+  else if(currentView==='whiteboard')       renderWhiteboard(el);
+  else if(currentView==='schedule_player') renderMySchedule(el);
 }
 
 // ── PILL HELPER ────────────────────────────────────────────────────────────
@@ -1948,21 +2098,43 @@ function renderFeed(el){
 // ── MY GROUP VIEW ──────────────────────────────────────────────────────────
 function renderMyGroup(el){
   const pos=currentRole==='HC'?'QB':currentRole;
-  const myPlayers=PLAYERS.filter(p=>p.pos===pos);
+  // Include players who are routed to this group for any period type
+  // A player is "in my group" if their primary pos matches OR if any period routing sends them here
+  const myPlayers=PLAYERS.filter(p=>{
+    if (!isPresent(p.id)) return false;
+    if (p.pos===pos || p.primaryPos===pos) return true;
+    // Check if any routing sends this player to my group
+    const r = p.routing||{};
+    return Object.values(r).includes(pos);
+  });
   const day=currentDay;
   const d=DRILLS_BY_DAY[day]&&DRILLS_BY_DAY[day][pos];
 
   const cards=myPlayers.map(p=>{
-    const weakHtml=p.weak.length?p.weak.map(w=>`<span class="weak-tag">${w}</span>`).join(''):`<span class="no-weak">no weak areas flagged</span>`;
+    const weakHtml=(p.weak||[]).length?p.weak.map(w=>`<span class="weak-tag">${w}</span>`).join(''):`<span class="no-weak">no weak areas flagged</span>`;
+    // Show routing info for multi-position players
+    const hasRouting = (p.secondaryPos||[]).length > 0;
+    const routingHtml = hasRouting ? (() => {
+      const r = p.routing||{};
+      const primary = p.primaryPos||p.pos;
+      const types = [{t:'indy',l:'Indy'},{t:'combo',l:'Combo'},{t:'team',l:'Team'}];
+      const rows = types.map(({t,l}) => {
+        const grp = r[t]||primary;
+        const isHere = grp===pos;
+        return `<span style="font-size:10px;font-family:var(--font-mono);padding:1px 6px;margin:1px;background:${isHere?'#1a3fa8':'#f0f0f0'};color:${isHere?'#fff':'#666'}">${l}: ${grp}</span>`;
+      }).join('');
+      return `<div style="margin-top:5px">${rows}</div>`;
+    })() : '';
     return `<div class="player-card">
       <div class="pc-header">
         <span class="pc-num">#${p.num}</span>
         <span class="pc-name">${p.name}</span>
-        <span class="pc-pos" style="background:${POS_BG[pos]};color:${POS_COLOR[pos]}">${p.pos}</span>
+        <span class="pc-pos" style="background:${POS_BG[p.pos]};color:${POS_COLOR[p.pos]}">${p.pos}</span>
       </div>
       <div class="pc-weak">${weakHtml}</div>
+      ${routingHtml}
       ${d?`<div class="pc-drill">${SCHEDULE[1].start} — ${d[0]}</div>`:''}
-      ${d&&p.weak.length?`<div class="pc-drill focus">${SCHEDULE[2].start} — ${d[1]||d[0]} <span style="color:var(--orange);font-size:9px">(focus)</span></div>`:''}
+      ${d&&(p.weak||[]).length?`<div class="pc-drill focus">${SCHEDULE[2].start} — ${d[1]||d[0]} <span style="color:var(--orange);font-size:9px">(focus)</span></div>`:''}
     </div>`;
   }).join('');
 
@@ -1993,6 +2165,7 @@ function renderPlayers(el){
   const btns=['All',...POS_LIST].map(p=>`<button class="filter-btn${p===playerFilter?' active':''}" onclick="window.setPlayerFilter('${p}')">${p}</button>`).join('');
   const shown=playerFilter==='All'?[...PLAYERS]:[...PLAYERS].filter(p=>p.pos===playerFilter);
   shown.sort((a,b)=>(a.num||0)-(b.num||0));
+  const presentCount = PLAYERS.filter(p => isPresent(p.id)).length;
 
   const rows=shown.map(p=>{
     const allPos=[p.primaryPos||p.pos,...(p.secondaryPos||[])].filter(Boolean);
@@ -2004,18 +2177,20 @@ function renderPlayers(el){
     const weakTags=(p.weak||[]).slice(0,5).map(w=>
       '<span style="display:inline-block;font-size:9px;padding:1px 6px;margin:1px;background:rgba(168,48,32,0.08);color:#a83020;border:1px solid rgba(168,48,32,0.25);font-family:var(--font-mono)">' + w + '</span>'
     ).join('') + ((p.weak||[]).length>5?'<span style="font-size:9px;color:var(--ink4)"> +' + (p.weak.length-5) + '</span>':'');
-    return '<tr>' +
+    const rowStyle = !isPresent(p.id) ? ' style="opacity:0.4"' : '';
+    return '<tr' + rowStyle + '>' +
       '<td style="font-family:var(--font-mono);font-size:11px;color:#000;white-space:nowrap;text-align:center">' + (p.num||'—') + '</td>' +
       '<td style="font-weight:500;font-size:12px;white-space:nowrap">' + p.name + '</td>' +
       '<td style="white-space:nowrap;text-align:center">' + posTags + '</td>' +
       '<td>' + (weakTags||'<span style="font-size:10px;color:var(--ink4)">—</span>') + '</td>' +
+      '<td id="att_' + p.id + '" style="text-align:center">' + attendanceBtn(p.id) + '</td>' +
       '</tr>';
   }).join('');
 
   el.innerHTML=`
     <div class="content-header">
       <span class="content-title">ROSTER</span>
-      <span class="content-meta">${shown.length} OF ${PLAYERS.length} PLAYERS</span>
+      <span class="content-meta" id="attendanceMeta">${presentCount} OF ${PLAYERS.length} PRESENT</span>
     </div>
     <div class="filter-bar">${btns}</div>
     <div class="roster-table-wrap">
@@ -2025,8 +2200,9 @@ function renderPlayers(el){
           <th>Name</th>
           <th style="text-align:center">Position</th>
           <th>Weak areas</th>
+          <th style="text-align:center;width:80px">Attendance</th>
         </tr></thead>
-        <tbody>${rows||'<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--ink4);font-size:12px">No players found</td></tr>'}</tbody>
+        <tbody>${rows||'<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--ink4);font-size:12px">No players found</td></tr>'}</tbody>
       </table>
     </div>`;
 }
@@ -2314,7 +2490,7 @@ function tickSideline() {
 function renderSideline(el) {
   const pos = currentRole === 'HC' ? 'QB' : currentRole;
   const isHC = currentRole === 'HC';
-  const myPlayers = PLAYERS.filter(p => p.pos === pos && p.weak && p.weak.length > 0).slice(0, 3);
+  const myPlayers = PLAYERS.filter(p => p.pos === pos && p.weak && p.weak.length > 0 && isPresent(p.id)).slice(0, 3);
   const notes = myPlayers.map(p =>
     '<div class="player-note"><b>' + p.name + ':</b> watch ' + p.weak[0] + '</div>'
   ).join('');
@@ -2488,6 +2664,7 @@ function openPlayerModal(playerId) {
           '<label class="field-label">Secondary positions <span class="field-hint">optional — click any that apply</span></label>' +
           '<div class="pos-selector" id="posSecondary">' + posButtons('secondary') + '</div>' +
         '</div>' +
+        buildRoutingSection(existing) +
         '<div class="modal-section" id="skillsSection">' +
           '<label class="field-label">Weak areas <span class="field-hint">tap to flag — shows red on coach cards</span></label>' +
           '<div class="skills-grid" id="skillsGrid">' + renderSkillBtns(primaryPos, secondaryPos, weakSkills) + '</div>' +
@@ -2510,6 +2687,48 @@ function renderSkillBtns(primary, secondary, weak) {
   const skills = getSkillsForPos(positions);
   if (!skills.length) return '<span style="font-size:11px;color:var(--ink4);font-family:var(--font-body)">Select a position first</span>';
   return skills.map(s => `<button class="skill-btn${weak.includes(s)?' weak':''}" onclick="window.toggleSkill('${s}')">${s}</button>`).join('');
+}
+
+
+// ── POSITION ROUTING ────────────────────────────────────────────────────────
+// Returns the position group a player should report to for a given period type
+function playerGroupForType(player, periodType) {
+  if (!player) return player.pos;
+  const routing = player.routing || {};
+  return routing[periodType] || player.primaryPos || player.pos;
+}
+
+// Returns true if player should be in the given position group for this period type
+function playerInGroup(player, groupPos, periodType) {
+  return playerGroupForType(player, periodType) === groupPos;
+}
+
+// Build routing dropdowns HTML for a player
+function buildRoutingSection(existing) {
+  const allPos = POS_LIST;
+  const hasSecondary = existing && (existing.secondaryPos||[]).length > 0;
+  if (!hasSecondary) return ''; // only show routing for multi-position players
+
+  const routing  = existing.routing || {};
+  const primary  = existing.primaryPos || existing.pos || '';
+  const types    = ['tempo','indy','combo','team'];
+  const labels   = {tempo:'Warmup / Conditioning',indy:'Indy periods',combo:'Combo periods',team:'Team periods'};
+
+  const rows = types.map(t => {
+    const allPositions = [primary, ...(existing.secondaryPos||[])].filter(Boolean);
+    const opts = allPositions.map(p =>
+      '<option value="' + p + '"' + ((routing[t]||primary)===p?' selected':'') + '>' + p + '</option>'
+    ).join('');
+    return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">' +
+      '<span style="font-family:var(--font-body);font-size:12px;color:#000;min-width:160px">' + labels[t] + '</span>' +
+      '<select class="type-select" id="routing_' + t + '" style="min-width:80px">' + opts + '</select>' +
+    '</div>';
+  }).join('');
+
+  return '<div class="modal-section">' +
+    '<label class="field-label">Period routing <span class="field-hint">which group does this player join each period?</span></label>' +
+    rows +
+  '</div>';
 }
 
 function getSkillsForPos(positions) {
@@ -2571,10 +2790,19 @@ window.savePlayerFromModal = function() {
   if (!pos)  { alert('Please select a primary position.'); return; }
 
   const id = editingPlayerId || ('p_' + Date.now());
+  // Build routing from modal dropdowns
+  const routing = {};
+  ['tempo','indy','combo','team'].forEach(t => {
+    const sel = document.getElementById('routing_' + t);
+    if (sel) routing[t] = sel.value;
+    else routing[t] = pos;
+  });
+
   const player = {
     id, name, num, pos,
     primaryPos: pos,
     secondaryPos: modal._secondaryPos,
+    routing,
     weak: modal._weakSkills,
     good: getSkillsForPos([pos, ...modal._secondaryPos]).filter(s => !modal._weakSkills.includes(s))
   };
@@ -2601,7 +2829,7 @@ function buildRosterRows(isHC) {
     })
     .sort((a,b) => (a.num||0) - (b.num||0));
 
-  if (!shown.length) return '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--ink4);font-size:12px">No players match</td></tr>';
+  if (!shown.length) return '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--ink4);font-size:12px">No players match</td></tr>';
 
   return shown.map(p => {
     const allPos = [p.primaryPos||p.pos, ...(p.secondaryPos||[])].filter(Boolean);
@@ -2613,13 +2841,15 @@ function buildRosterRows(isHC) {
     const weakTags = (p.weak||[]).slice(0,5).map(w =>
       '<span style="display:inline-block;font-size:9px;padding:1px 6px;margin:1px;background:rgba(168,48,32,0.08);color:#a83020;border:1px solid rgba(168,48,32,0.25);font-family:var(--font-mono)">' + w + '</span>'
     ).join('') + ((p.weak||[]).length > 5 ? '<span style="font-size:9px;color:var(--ink4)"> +' + (p.weak.length-5) + '</span>' : '');
-    const editBtn = '<button class="roster-action-btn" onclick="window.editPlayer(\'' + p.id + '\')">EDIT</button>';
+    const editBtn   = '<button class="roster-action-btn" onclick="window.editPlayer(\'' + p.id + '\')">EDIT</button>';
     const removeBtn = isHC ? '<button class="roster-action-btn delete" onclick="window.confirmDeletePlayer(\'' + p.id + '\')">REMOVE</button>' : '';
-    return '<tr>' +
+    const rowStyle  = !isPresent(p.id) ? ' style="opacity:0.4"' : '';
+    return '<tr' + rowStyle + '>' +
       '<td style="font-family:var(--font-mono);font-size:11px;color:#000;white-space:nowrap;text-align:center">' + (p.num||'—') + '</td>' +
       '<td style="font-weight:500;font-size:12px;white-space:nowrap">' + p.name + '</td>' +
       '<td style="white-space:nowrap;text-align:center">' + posTags + '</td>' +
       '<td>' + (weakTags || '<span style="font-size:10px;color:var(--ink4)">—</span>') + '</td>' +
+      '<td id="att_' + p.id + '" style="text-align:center">' + attendanceBtn(p.id) + '</td>' +
       '<td style="white-space:nowrap">' + editBtn + removeBtn + '</td>' +
       '</tr>';
   }).join('');
@@ -2627,15 +2857,21 @@ function buildRosterRows(isHC) {
 
 function renderRosterEditor(el) {
   const isHC = currentRole === 'HC';
+  const presentCount = PLAYERS.filter(p => isPresent(p.id)).length;
   const posFilters = ['All',...POS_LIST].map(p =>
     `<button class="filter-btn${p===rosterPosFilter?' active':''}" onclick="window.setRosterPosFilter('${p}')">${p}</button>`).join('');
 
   el.innerHTML = `
     <div class="content-header">
       <span class="content-title">EDIT ROSTER</span>
-      <span class="content-meta">${PLAYERS.length} PLAYERS</span>
+      <span class="content-meta" id="attendanceMeta">${presentCount} OF ${PLAYERS.length} PRESENT</span>
       <div style="flex:1"></div>
-      ${isHC ? `<button class="roster-add-btn" onclick="window.openAddPlayer()">+ ADD PLAYER</button>` : ''}
+      ${isHC ? `
+        <button class="roster-add-btn" style="margin-right:6px;background:#1a7a40;color:#fff" onclick="window.markAllPresent()">✓ ALL PRESENT</button>
+        <button class="roster-add-btn" style="margin-right:6px;background:#444;color:#fff" onclick="window.triggerImport()">⬆ IMPORT FILE</button>
+        <button class="roster-add-btn" onclick="window.openAddPlayer()">+ ADD PLAYER</button>
+        <input type="file" id="rosterFileInput" accept=".csv,.xlsx" style="display:none" onchange="window.handleRosterFile(this)">
+      ` : ''}
     </div>
     <div class="roster-toolbar">
       <input class="roster-search" id="rosterSearchInput" placeholder="Search name or #..." oninput="window.setRosterSearch(this.value)" value="${rosterSearch}">
@@ -2643,29 +2879,22 @@ function renderRosterEditor(el) {
     </div>
     <div class="roster-table-wrap">
       <table class="roster-table">
-        <thead><tr><th style="text-align:center;width:40px">#</th><th>Name</th><th style="text-align:center">Position</th><th>Weak areas</th><th width="140">Actions</th></tr></thead>
+        <thead><tr>
+          <th style="text-align:center;width:40px">#</th>
+          <th>Name</th>
+          <th style="text-align:center">Position</th>
+          <th>Weak areas</th>
+          <th style="text-align:center;width:80px">Attendance</th>
+          <th width="140">Actions</th>
+        </tr></thead>
         <tbody id="rosterTbody">${buildRosterRows(isHC)}</tbody>
       </table>
     </div>`;
 
-  // Restore focus and cursor position if search was active
   if (rosterSearch) {
     const inp = document.getElementById('rosterSearchInput');
     if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
   }
-}
-
-// ── SCHEDULE EDITOR ────────────────────────────────────────────────────────
-const TYPE_LABELS = {indy:'INDY',combo:'COMBO',team:'TEAM',tempo:'WARMUP'};
-const TYPE_OPTS = ['tempo','indy','combo','team'];
-
-function calcDuration(start, end) {
-  function toMins(t) {
-    const [h,m] = t.split(':').map(Number);
-    return h*60 + m;
-  }
-  const diff = toMins(end) - toMins(start);
-  return diff > 0 ? diff + ' min' : '—';
 }
 
 function scheduleChanged() {
@@ -2777,7 +3006,681 @@ window.removePeriod      = removePeriod;
 window.movePeriod        = movePeriod;
 window.updatePeriodField = updatePeriodField;
 window.saveSchedule      = saveSchedule;
+// ── WHITEBOARD ─────────────────────────────────────────────────────────────
+let wbTool     = 'pen';       // pen | line | circle | eraser
+let wbColor    = '#ffffff';   // current draw color
+let wbSize     = 3;           // brush size
+let wbDrawing  = false;
+let wbStartX   = 0, wbStartY = 0;
+let wbSnapshot = null;        // for shape preview
+let wbStrokes  = [];          // local stroke log
+let wbListener = null;        // Firebase unsubscribe
+
+const WB_COLORS = [
+  { hex: '#ffffff', label: 'White'  },
+  { hex: '#ff3333', label: 'Red'    },
+  { hex: '#4f82f7', label: 'Blue'   },
+  { hex: '#ffe033', label: 'Yellow' },
+  { hex: '#ff8c00', label: 'Orange' },
+  { hex: '#000000', label: 'Black'  },
+];
+const WB_SIZES = [2, 4, 8, 14];
+
+function renderWhiteboard(el) {
+  el.innerHTML =
+    '<div class="content-header">' +
+      '<span class="content-title">WHITEBOARD</span>' +
+      '<span class="content-meta">All coaches can draw · changes sync live</span>' +
+    '</div>' +
+    '<div class="wb-wrap">' +
+      '<div class="wb-toolbar">' +
+        // Tools
+        '<button class="wb-tool-btn active" id="wbt-pen"    onclick="window.wbSetTool(\'pen\')">✏ PEN</button>' +
+        '<button class="wb-tool-btn"        id="wbt-line"   onclick="window.wbSetTool(\'line\')">╱ LINE</button>' +
+        '<button class="wb-tool-btn"        id="wbt-circle" onclick="window.wbSetTool(\'circle\')">○ CIRCLE</button>' +
+        '<button class="wb-tool-btn"        id="wbt-eraser" onclick="window.wbSetTool(\'eraser\')">⌫ ERASE</button>' +
+        '<button class="wb-tool-btn"        id="wbt-football" onclick="window.wbSetTool(\'football\')" title="Place football">🏈</button>' +
+        '<div style="width:1px;height:24px;background:var(--rule2);margin:0 4px"></div>' +
+        // Colors
+        WB_COLORS.map(c =>
+          '<button class="wb-color-btn' + (c.hex === wbColor ? ' active' : '') + '" ' +
+          'style="background:' + c.hex + ';' + (c.hex === '#ffffff' ? 'border-color:#ccc' : '') + '" ' +
+          'onclick="window.wbSetColor(\'' + c.hex + '\')" title="' + c.label + '"></button>'
+        ).join('') +
+        '<div style="width:1px;height:24px;background:var(--rule2);margin:0 4px"></div>' +
+        // Sizes
+        WB_SIZES.map(s =>
+          '<button class="wb-size-btn' + (s === wbSize ? ' active' : '') + '" ' +
+          'onclick="window.wbSetSize(' + s + ')" style="min-width:36px">' +
+          '<span style="display:inline-block;width:' + Math.min(s*2,20) + 'px;height:' + Math.min(s*2,20) + 'px;border-radius:50%;background:#555;vertical-align:middle"></span>' +
+          '</button>'
+        ).join('') +
+        '<button class="wb-tool-btn clear-btn" onclick="window.wbClear()">✕ CLEAR</button>' +
+      '</div>' +
+      '<div class="wb-canvas-wrap" id="wbWrap">' +
+        '<canvas id="wbCanvas"></canvas>' +
+        '<div class="wb-live-badge">● LIVE</div>' +
+      '</div>' +
+    '</div>';
+
+  // Init canvas after DOM is ready
+  setTimeout(() => {
+    wbInitCanvas();
+    wbInitSync();
+  }, 50);
+}
+
+function wbInitCanvas() {
+  const wrap   = document.getElementById('wbWrap');
+  const canvas = document.getElementById('wbCanvas');
+  if (!canvas || !wrap) return;
+
+  canvas.width  = wrap.offsetWidth;
+  canvas.height = wrap.offsetHeight;
+
+  const ctx = canvas.getContext('2d');
+  wbDrawField(ctx, canvas.width, canvas.height);
+  // Replay all stored strokes
+  wbStrokes.forEach(s => wbReplayStroke(ctx, s));
+
+  // Mouse events
+  canvas.addEventListener('mousedown',  e => wbPointerDown(e, canvas));
+  canvas.addEventListener('mousemove',  e => wbPointerMove(e, canvas));
+  canvas.addEventListener('mouseup',    e => wbPointerUp(e, canvas));
+  canvas.addEventListener('mouseleave', e => wbPointerUp(e, canvas));
+
+  // Touch events
+  canvas.addEventListener('touchstart',  e => { e.preventDefault(); wbPointerDown(e.touches[0], canvas); }, {passive:false});
+  canvas.addEventListener('touchmove',   e => { e.preventDefault(); wbPointerMove(e.touches[0], canvas); }, {passive:false});
+  canvas.addEventListener('touchend',    e => { e.preventDefault(); wbPointerUp(e.changedTouches[0], canvas); }, {passive:false});
+}
+
+function wbDrawField(ctx, w, h) {
+  // Green field background
+  ctx.fillStyle = '#2d5a1b';
+  ctx.fillRect(0, 0, w, h);
+
+  // Yard lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1;
+  const lines = 10;
+  for (let i = 1; i < lines; i++) {
+    const x = (w / lines) * i;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+    ctx.stroke();
+  }
+  // Hash marks
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  const hashY1 = h * 0.35, hashY2 = h * 0.65;
+  for (let i = 0; i <= lines; i++) {
+    const x = (w / lines) * i;
+    ctx.beginPath(); ctx.moveTo(x-6, hashY1); ctx.lineTo(x+6, hashY1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x-6, hashY2); ctx.lineTo(x+6, hashY2); ctx.stroke();
+  }
+  // Line of scrimmage
+  ctx.strokeStyle = 'rgba(255,210,0,0.35)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8,6]);
+  ctx.beginPath(); ctx.moveTo(0, h*0.5); ctx.lineTo(w, h*0.5); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function wbGetPos(e, canvas) {
+  const r = canvas.getBoundingClientRect();
+  return {
+    x: ((e.clientX - r.left) / r.width)  * canvas.width,
+    y: ((e.clientY - r.top)  / r.height) * canvas.height
+  };
+}
+
+function wbPointerDown(e, canvas) {
+  const pos = wbGetPos(e, canvas);
+  wbStartX = pos.x; wbStartY = pos.y;
+  const ctx = canvas.getContext('2d');
+
+  // Football emoji is a stamp — place immediately on click, no drag needed
+  if (wbTool === 'football') {
+    const size = Math.min(canvas.width, canvas.height) * 0.06;
+    ctx.font = size + 'px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🏈', pos.x, pos.y);
+    // Store as a stroke for sync
+    const w = canvas.width, h = canvas.height;
+    const stroke = {
+      tool: 'football',
+      color: '__emoji__',
+      size: size / w,
+      x0: pos.x / w, y0: pos.y / h,
+      x1: pos.x / w, y1: pos.y / h,
+      ts: Date.now(),
+      by: currentRole
+    };
+    wbStrokes.push(stroke);
+    if (db) push(ref(db, 'playscript/whiteboard/strokes'), stroke);
+    return; // no drag tracking needed
+  }
+
+  wbDrawing = true;
+  if (wbTool === 'pen' || wbTool === 'eraser') {
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+  } else {
+    wbSnapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  }
+}
+
+function wbPointerMove(e, canvas) {
+  if (!wbDrawing) return;
+  const pos = wbGetPos(e, canvas);
+  const ctx = canvas.getContext('2d');
+
+  if (wbTool === 'pen') {
+    ctx.strokeStyle = wbColor;
+    ctx.lineWidth   = wbSize;
+    ctx.lineCap     = 'round';
+    ctx.lineJoin    = 'round';
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+  } else if (wbTool === 'eraser') {
+    ctx.strokeStyle = '#2d5a1b';
+    ctx.lineWidth   = wbSize * 4;
+    ctx.lineCap     = 'round';
+    ctx.lineJoin    = 'round';
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+  } else {
+    // Shape tools — restore snapshot for clean preview
+    ctx.putImageData(wbSnapshot, 0, 0);
+    ctx.strokeStyle = wbColor;
+    ctx.lineWidth   = wbSize;
+    ctx.lineCap     = 'round';
+    if (wbTool === 'line') {
+      ctx.beginPath();
+      ctx.moveTo(wbStartX, wbStartY);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+    } else if (wbTool === 'circle') {
+      const rx = Math.abs(pos.x - wbStartX) / 2;
+      const ry = Math.abs(pos.y - wbStartY) / 2;
+      const cx = wbStartX + (pos.x - wbStartX) / 2;
+      const cy = wbStartY + (pos.y - wbStartY) / 2;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, Math.max(rx,2), Math.max(ry,2), 0, 0, Math.PI*2);
+      ctx.stroke();
+    }
+  }
+}
+
+function wbPointerUp(e, canvas) {
+  if (!wbDrawing) return;
+  wbDrawing = false;
+  const pos = wbGetPos(e, canvas);
+  const ctx = canvas.getContext('2d');
+
+  // Final draw for shapes
+  if (wbTool === 'line' || wbTool === 'circle') {
+    ctx.putImageData(wbSnapshot, 0, 0);
+    ctx.strokeStyle = wbColor;
+    ctx.lineWidth   = wbSize;
+    ctx.lineCap     = 'round';
+    if (wbTool === 'line') {
+      ctx.beginPath();
+      ctx.moveTo(wbStartX, wbStartY);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+    } else {
+      const rx = Math.abs(pos.x - wbStartX) / 2;
+      const ry = Math.abs(pos.y - wbStartY) / 2;
+      const cx = wbStartX + (pos.x - wbStartX) / 2;
+      const cy = wbStartY + (pos.y - wbStartY) / 2;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, Math.max(rx,2), Math.max(ry,2), 0, 0, Math.PI*2);
+      ctx.stroke();
+    }
+  }
+
+  // Normalize coords to 0-1 for resolution independence
+  const w = canvas.width, h = canvas.height;
+  const stroke = {
+    tool:   wbTool,
+    color:  wbTool === 'eraser' ? '__eraser__' : wbColor,
+    size:   wbSize,
+    x0: wbStartX / w,  y0: wbStartY / h,
+    x1: pos.x / w,     y1: pos.y / h,
+    ts: Date.now(),
+    by: currentRole
+  };
+
+  wbStrokes.push(stroke);
+
+  // Push to Firebase
+  if (db) push(ref(db, 'playscript/whiteboard/strokes'), stroke);
+}
+
+function wbReplayStroke(ctx, s) {
+  const w = ctx.canvas.width, h = ctx.canvas.height;
+  const x0 = s.x0*w, y0 = s.y0*h, x1 = s.x1*w, y1 = s.y1*h;
+  const isEraser = s.color === '__eraser__';
+
+  ctx.strokeStyle = isEraser ? '#2d5a1b' : s.color;
+  ctx.lineWidth   = isEraser ? s.size * 4 : s.size;
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
+
+  if (s.tool === 'football') {
+    const emojiSize = (s.size || 0.06) * ctx.canvas.width;
+    ctx.font = emojiSize + 'px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🏈', x0, y0);
+  } else if (s.tool === 'pen' || s.tool === 'eraser') {
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
+    ctx.stroke();
+  } else if (s.tool === 'line') {
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
+    ctx.stroke();
+  } else if (s.tool === 'circle') {
+    const rx = Math.abs(x1-x0)/2, ry = Math.abs(y1-y0)/2;
+    const cx = x0+(x1-x0)/2,     cy = y0+(y1-y0)/2;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, Math.max(rx,2), Math.max(ry,2), 0, 0, Math.PI*2);
+    ctx.stroke();
+  }
+}
+
+function wbInitSync() {
+  if (!db) return;
+  // Load and listen for all strokes
+  if (wbListener) return; // already listening
+  wbListener = onValue(ref(db, 'playscript/whiteboard/strokes'), snap => {
+    const val = snap.val();
+    wbStrokes = val ? Object.values(val) : [];
+    wbStrokes.sort((a,b) => (a.ts||0) - (b.ts||0));
+    // Redraw canvas
+    const canvas = document.getElementById('wbCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    wbDrawField(ctx, canvas.width, canvas.height);
+    wbStrokes.forEach(s => wbReplayStroke(ctx, s));
+  });
+}
+
+function wbClear() {
+  // Use showBanner as confirmation feedback instead of confirm() which blocks on mobile
+  wbStrokes = [];
+  // Clear Firebase
+  if (db) {
+    remove(ref(db, 'playscript/whiteboard/strokes'));
+  }
+  // Redraw field immediately
+  const canvas = document.getElementById('wbCanvas');
+  if (canvas) {
+    const ctx = canvas.getContext('2d');
+    wbDrawField(ctx, canvas.width, canvas.height);
+  }
+  showBanner('new-period', '✓', 'WHITEBOARD CLEARED', 'Board cleared for all coaches', 3);
+}
+
+function wbSetTool(tool) {
+  wbTool = tool;
+  document.querySelectorAll('.wb-tool-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('wbt-' + tool);
+  if (btn) btn.classList.add('active');
+}
+
+function wbSetColor(hex) {
+  wbColor = hex;
+  document.querySelectorAll('.wb-color-btn').forEach(b => b.classList.remove('active'));
+  // Find and activate the matching button
+  document.querySelectorAll('.wb-color-btn').forEach(b => {
+    if (b.style.background === hex || b.style.backgroundColor === hex) b.classList.add('active');
+  });
+}
+
+function wbSetSize(size) {
+  wbSize = size;
+  document.querySelectorAll('.wb-size-btn').forEach(b => b.classList.remove('active'));
+  // Re-render whiteboard toolbar size buttons
+  const toolbar = document.querySelector('.wb-toolbar');
+  if (toolbar) {
+    toolbar.querySelectorAll('.wb-size-btn').forEach((b,i) => {
+      b.classList.toggle('active', WB_SIZES[i] === size);
+    });
+  }
+}
+
+window.wbSetTool   = wbSetTool;
+window.wbSetColor  = wbSetColor;
+window.wbSetSize   = wbSetSize;
+window.wbClear     = wbClear;
+
+// ── MY SCHEDULE VIEW ────────────────────────────────────────────────────────
+function renderMySchedule(el) {
+  const myPos = currentRole === 'HC' ? 'QB' : currentRole;
+
+  const myPlayers = PLAYERS.filter(p => {
+    if (!isPresent(p.id)) return false;
+    if ((p.secondaryPos||[]).length === 0) return false;
+    const primary = p.primaryPos||p.pos;
+    const r = p.routing||{};
+    return primary===myPos || Object.values(r).includes(myPos);
+  });
+
+  const periodRows = SCHEDULE.map((row, i) => {
+    const playerCols = myPlayers.map(p => {
+      const grp = playerGroupForType(p, row.type);
+      const here = grp === myPos;
+      const drill = (scriptData[currentDay]&&scriptData[currentDay][i]&&scriptData[currentDay][i][grp])||'—';
+      return '<td style="padding:7px 10px;border-right:1px solid var(--rule);font-size:12px;' +
+        (here ? 'background:#e8f0ff;font-weight:600' : 'opacity:0.4') + '">' +
+        '<div style="font-family:var(--font-display);letter-spacing:.04em">' + grp + '</div>' +
+        '<div style="font-size:10px;color:#555;font-family:var(--font-mono);margin-top:2px">' + (here ? drill : '—') + '</div>' +
+      '</td>';
+    }).join('');
+
+    const typeColors = {indy:'#dce6ff',combo:'#ffe8d6',team:'#cdd8f8',tempo:'#e8edf5'};
+    const typePill = '<span style="font-size:9px;padding:1px 6px;font-family:var(--font-display);letter-spacing:.06em;background:' + (typeColors[row.type]||'#eee') + ';color:#333">' + row.type.toUpperCase() + '</span>';
+
+    return '<tr style="border-bottom:1px solid var(--rule)">' +
+      '<td style="padding:7px 10px;border-right:1px solid var(--rule);white-space:nowrap">' +
+        '<div style="font-family:var(--font-mono);font-size:11px;color:#000">' + row.start + '</div>' +
+        '<div style="font-size:12px;font-weight:500;margin:2px 0">' + row.period + '</div>' +
+        typePill +
+      '</td>' + playerCols + '</tr>';
+  }).join('');
+
+  const playerHeaders = myPlayers.map(p =>
+    '<th style="padding:8px 10px;text-align:left;background:var(--royal-dark);color:#fff;font-family:var(--font-body);font-size:12px;font-weight:600;border-right:1px solid rgba(255,255,255,0.1);border-bottom:2px solid var(--orange)">#' + (p.num||'?') + ' ' + p.name + '</th>'
+  ).join('');
+
+  el.innerHTML =
+    '<div class="content-header">' +
+      '<span class="content-title">MY SCHEDULE</span>' +
+      '<span class="content-meta">' + myPos + ' · ' + myPlayers.length + ' MULTI-POSITION</span>' +
+    '</div>' +
+    '<div style="font-size:12px;color:#000;font-family:var(--font-body);margin-bottom:10px">' +
+      'Period-by-period routing for multi-position players in your group. <strong>Highlighted</strong> = reporting to you.' +
+    '</div>' +
+    (myPlayers.length === 0
+      ? '<div style="padding:24px;text-align:center;font-size:13px;color:#555;font-family:var(--font-body);border:1px solid var(--rule2)">No multi-position players in your group. Edit a player\'s secondary positions and routing in Edit Roster to see them here.</div>'
+      : '<div style="overflow-x:auto;border:1px solid var(--rule2)">' +
+          '<table style="width:100%;border-collapse:collapse;min-width:400px">' +
+            '<thead><tr>' +
+              '<th style="padding:8px 10px;text-align:left;background:var(--royal-dark);color:#fff;font-family:var(--font-display);font-size:11px;letter-spacing:.1em;border-right:1px solid rgba(255,255,255,0.1);border-bottom:2px solid var(--orange)">PERIOD</th>' +
+              playerHeaders +
+            '</tr></thead>' +
+            '<tbody>' + periodRows + '</tbody>' +
+          '</table>' +
+        '</div>'
+    );
+}
+
+function triggerImport() {
+  const inp = document.getElementById('rosterFileInput');
+  if (inp) inp.click();
+}
+
+function handleRosterFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  const reader = new FileReader();
+
+  if (ext === 'csv') {
+    reader.onload = e => parseCSVRoster(e.target.result);
+    reader.readAsText(file);
+  } else if (ext === 'xlsx') {
+    reader.onload = e => parseXLSXRoster(e.target.result);
+    reader.readAsArrayBuffer(file);
+  } else {
+    alert('Please upload a .csv or .xlsx file.');
+  }
+  // Reset input so same file can be re-imported
+  input.value = '';
+}
+
+const VALID_POSITIONS = ['QB','RB','WR','TE','OL','DL','LB','DB','K/P','ST'];
+
+function normalizePos(raw) {
+  if (!raw) return '';
+  const up = String(raw).trim().toUpperCase();
+  return VALID_POSITIONS.find(p => p === up) || '';
+}
+
+function parseCSVRoster(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+  if (!lines.length) { alert('File appears to be empty.'); return; }
+
+  // Detect header row
+  const firstLower = lines[0].toLowerCase();
+  const hasHeader = firstLower.includes('name') || firstLower.includes('jersey') || firstLower.includes('position');
+  const dataLines = hasHeader ? lines.slice(1) : lines;
+
+  const players = [];
+  const errors  = [];
+
+  dataLines.forEach((line, i) => {
+    if (!line) return;
+    // Handle quoted CSV values
+    const cols = line.match(/(".*?"|[^,]+)(?=,|$)/g)?.map(c => c.replace(/^"|"$/g,'').trim()) || line.split(',').map(c => c.trim());
+    const [numRaw, first, last, primaryRaw, secondaryRaw, weakRaw] = cols;
+
+    const num = parseInt(numRaw);
+    const name = ((first||'') + ' ' + (last||'')).trim();
+    const primaryPos = normalizePos(primaryRaw);
+
+    if (!name || name === ' ') { errors.push(`Row ${i+2}: missing name`); return; }
+    if (!primaryPos) { errors.push(`Row ${i+2} (${name}): invalid position "${primaryRaw}"`); return; }
+
+    const secondaryPos = secondaryRaw
+      ? secondaryRaw.split(',').map(s => normalizePos(s.trim())).filter(Boolean)
+      : [];
+    const weak = weakRaw
+      ? weakRaw.split(',').map(s => s.trim()).filter(Boolean)
+      : [];
+
+    players.push({
+      id: 'p_import_' + Date.now() + '_' + i,
+      num: isNaN(num) ? 0 : num,
+      name,
+      pos: primaryPos,
+      primaryPos,
+      secondaryPos,
+      weak,
+      good: []
+    });
+  });
+
+  confirmImport(players, errors);
+}
+
+function parseXLSXRoster(arrayBuffer) {
+  // Load SheetJS dynamically if not already loaded
+  if (typeof XLSX === 'undefined') {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    script.onload = () => doParseXLSX(arrayBuffer);
+    script.onerror = () => alert('Could not load Excel parser. Try saving as CSV instead.');
+    document.head.appendChild(script);
+  } else {
+    doParseXLSX(arrayBuffer);
+  }
+}
+
+function doParseXLSX(arrayBuffer) {
+  const wb    = XLSX.read(arrayBuffer, { type: 'array' });
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  const rows  = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+  if (!rows.length) { alert('File appears to be empty.'); return; }
+
+  // Detect header — skip if first col looks like a header
+  const firstCell = String(rows[0][0] || '').toLowerCase();
+  const hasHeader = isNaN(parseInt(firstCell)) && firstCell !== '';
+  const dataRows  = hasHeader ? rows.slice(1) : rows;
+
+  const players = [];
+  const errors  = [];
+
+  dataRows.forEach((cols, i) => {
+    const [numRaw, first, last, primaryRaw, secondaryRaw, weakRaw] = cols.map(c => String(c||'').trim());
+    const num = parseInt(numRaw);
+    const name = ((first||'') + ' ' + (last||'')).trim();
+    const primaryPos = normalizePos(primaryRaw);
+
+    if (!name || name === ' ') return; // skip blank rows
+    if (!primaryPos) { errors.push(`Row ${i+2} (${name}): invalid position "${primaryRaw}"`); return; }
+
+    const secondaryPos = secondaryRaw
+      ? secondaryRaw.split(',').map(s => normalizePos(s.trim())).filter(Boolean)
+      : [];
+    const weak = weakRaw
+      ? weakRaw.split(',').map(s => s.trim()).filter(Boolean)
+      : [];
+
+    players.push({
+      id: 'p_import_' + Date.now() + '_' + i,
+      num: isNaN(num) ? 0 : num,
+      name,
+      pos: primaryPos,
+      primaryPos,
+      secondaryPos,
+      weak,
+      good: []
+    });
+  });
+
+  confirmImport(players, errors);
+}
+
+// Temp storage for pending import data (avoids JSON-in-HTML attribute issues)
+let pendingImportPlayers = [];
+
+function confirmImport(players, errors) {
+  if (!players.length) {
+    alert('No valid players found.\n\nErrors:\n' + (errors.join('\n') || 'File may be empty or incorrectly formatted.'));
+    return;
+  }
+
+  // Store players for executeImport to read
+  pendingImportPlayers = players;
+
+  // Calculate merge preview
+  const existingByNum = {};
+  PLAYERS.forEach(p => { if (p.num) existingByNum[p.num] = p; });
+  const toAdd    = players.filter(p => !existingByNum[p.num]);
+  const toUpdate = players.filter(p =>  existingByNum[p.num]);
+  const toKeep   = PLAYERS.filter(p => !players.find(q => q.num === p.num));
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'importModal';
+
+  const errNote = errors.length
+    ? `<div style="font-size:11px;color:#a83020;margin-top:8px;font-family:var(--font-body)">${errors.length} row(s) skipped — invalid position or missing name</div>`
+    : '';
+
+  overlay.innerHTML =
+    '<div class="modal-box" style="max-width:480px">' +
+      '<div class="modal-header">' +
+        '<span class="modal-title">IMPORT ' + players.length + ' PLAYER' + (players.length !== 1 ? 'S' : '') + '</span>' +
+        '<button class="modal-close" onclick="document.getElementById(\'importModal\').remove()">&#x2715;</button>' +
+      '</div>' +
+      '<div class="modal-body" style="gap:12px">' +
+        errNote +
+        '<div style="font-size:13px;color:#000;font-family:var(--font-body)">How should the import handle your existing roster?</div>' +
+        '<label style="display:flex;align-items:flex-start;gap:12px;padding:14px;border:2px solid var(--rule2);cursor:pointer;background:var(--surface2)" id="importOptReplace">' +
+          '<input type="radio" name="importMode" value="replace" style="margin-top:3px;flex-shrink:0">' +
+          '<div>' +
+            '<div style="font-family:var(--font-display);font-size:14px;letter-spacing:.06em;color:#000">REPLACE ALL</div>' +
+            '<div style="font-size:12px;color:#000;font-family:var(--font-body);margin-top:3px">Remove all current players and load only the file. <strong>' + players.length + ' players</strong> will replace the current roster of <strong>' + PLAYERS.length + '</strong>.</div>' +
+          '</div>' +
+        '</label>' +
+        '<label style="display:flex;align-items:flex-start;gap:12px;padding:14px;border:2px solid var(--rule2);cursor:pointer;background:var(--surface2)" id="importOptMerge">' +
+          '<input type="radio" name="importMode" value="merge" style="margin-top:3px;flex-shrink:0">' +
+          '<div>' +
+            '<div style="font-family:var(--font-display);font-size:14px;letter-spacing:.06em;color:#000">ADD / UPDATE</div>' +
+            '<div style="font-size:12px;color:#000;font-family:var(--font-body);margin-top:3px">' +
+              (toAdd.length    ? '<strong>' + toAdd.length    + ' new</strong> added · ' : '') +
+              (toUpdate.length ? '<strong>' + toUpdate.length + '</strong> updated (matched by jersey #) · ' : '') +
+              '<strong>' + toKeep.length + '</strong> kept unchanged.' +
+            '</div>' +
+          '</div>' +
+        '</label>' +
+      '</div>' +
+      '<div class="modal-footer">' +
+        '<button class="cancel-btn" onclick="document.getElementById(\'importModal\').remove()">CANCEL</button>' +
+        '<button class="save-btn" onclick="window.executeImport()">IMPORT</button>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(overlay);
+
+  // Highlight selected option border
+  overlay.querySelectorAll('input[name="importMode"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      overlay.querySelectorAll('label').forEach(l => l.style.borderColor = 'var(--rule2)');
+      radio.closest('label').style.borderColor = 'var(--royal-dark)';
+    });
+  });
+}
+
+function executeImport() {
+  const overlay  = document.getElementById('importModal');
+  const selected = overlay ? overlay.querySelector('input[name="importMode"]:checked') : null;
+  const players  = pendingImportPlayers;
+
+  if (!selected) { alert('Please choose Replace All or Add / Update.'); return; }
+  if (!players || !players.length) { alert('No player data to import.'); return; }
+
+  const mode = selected.value;
+
+  if (mode === 'replace') {
+    PLAYERS.length = 0;
+    players.forEach(p => PLAYERS.push(p));
+  } else {
+    const existingByNum = {};
+    PLAYERS.forEach((p, i) => { if (p.num) existingByNum[p.num] = i; });
+    players.forEach(p => {
+      if (p.num && existingByNum[p.num] !== undefined) {
+        PLAYERS[existingByNum[p.num]] = p;
+      } else {
+        PLAYERS.push(p);
+      }
+    });
+  }
+
+  if (db) {
+    const obj = {};
+    PLAYERS.forEach(p => { obj[p.id] = p; });
+    set(ref(db, 'playscript/roster'), obj);
+  }
+
+  if (overlay) overlay.remove();
+  pendingImportPlayers = [];
+  rosterSearch = '';
+  rosterPosFilter = 'All';
+  render();
+
+  showBanner('new-period', '✓',
+    (mode === 'replace' ? players.length + ' PLAYERS LOADED' : players.length + ' PLAYERS IMPORTED'),
+    mode === 'replace' ? 'Roster replaced successfully' : 'Roster updated successfully',
+    5
+  );
+}
+
+window.executeImport = executeImport;
+
 function openAddPlayer() { openPlayerModal(null); }
+window.triggerImport     = triggerImport;
+window.handleRosterFile  = handleRosterFile;
 function setRosterSearch(val) {
   rosterSearch = val;
   // Only rebuild the table body — don't re-render the whole view (would lose focus)
@@ -2802,6 +3705,45 @@ function doPrint() {
 }
 window.doPrint = doPrint;
 // ── USER GUIDE ─────────────────────────────────────────────────────────────
+// ── ROSTER TEMPLATE PAGE ───────────────────────────────────────────────────
+function renderTemplatePage(el) {
+  el.innerHTML = `
+    <div class="content-header">
+      <span class="content-title">ROSTER TEMPLATE</span>
+    </div>
+    <div style="max-width:600px;display:flex;flex-direction:column;gap:20px;font-family:var(--font-body);font-size:14px;line-height:1.75;color:#000">
+
+      <div style="background:var(--surface2);border:1px solid var(--rule2);border-top:4px solid var(--orange);padding:20px 20px">
+        <div style="font-family:var(--font-display);font-size:20px;letter-spacing:.08em;color:var(--royal-dark);margin-bottom:8px">DOWNLOAD THE TEMPLATE</div>
+        <p style="margin:0 0 16px">Download this Excel file, fill in your players, then use the Import button in Edit Roster to load them all at once. No typing each player individually.</p>
+        <a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,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" download="warriors_roster_template.xlsx" style="display:inline-block;padding:10px 24px;background:var(--royal-dark);color:#fff;text-decoration:none;font-family:var(--font-display);font-size:15px;letter-spacing:.08em">⬇ DOWNLOAD TEMPLATE</a>
+      </div>
+
+      <div>
+        <div style="font-family:var(--font-display);font-size:18px;letter-spacing:.08em;color:var(--royal-dark);margin-bottom:8px">HOW TO FILL IT IN</div>
+        <ul style="margin:0 0 0 20px;display:flex;flex-direction:column;gap:6px">
+          <li><strong>Jersey #</strong> — numbers only, no # symbol</li>
+          <li><strong>First Name / Last Name</strong> — required for every player</li>
+          <li><strong>Primary Position</strong> — one of: QB, RB, WR, TE, OL, DL, LB, DB, K/P, ST</li>
+          <li><strong>Secondary Positions</strong> — optional, comma-separated (e.g. <code>WR,ST</code>)</li>
+          <li><strong>Weak Areas</strong> — optional, comma-separated skills. You can also add these later in Edit Roster.</li>
+        </ul>
+      </div>
+
+      <div>
+        <div style="font-family:var(--font-display);font-size:18px;letter-spacing:.08em;color:var(--royal-dark);margin-bottom:8px">TIPS</div>
+        <ul style="margin:0 0 0 20px;display:flex;flex-direction:column;gap:6px">
+          <li>Delete the 8 sample rows before importing</li>
+          <li>Save as <strong>.xlsx</strong> or <strong>.csv</strong> before importing</li>
+          <li>Each player needs exactly one Primary Position</li>
+          <li>The Import button will be in the Edit Roster view (Head Coach only)</li>
+          <li>Importing replaces all current placeholder players — your real roster takes over</li>
+        </ul>
+      </div>
+
+    </div>`;
+}
+
 function renderUserGuide(el) {
   el.innerHTML = `
     <div class="content-header">
@@ -2909,7 +3851,9 @@ window.setView      = setView;
 window.setDay       = setDay;
 window.toggleDayDropdown = toggleDayDropdown;
 window.pickDay      = pickDay;
-window.toggleSidebar = toggleSidebar;
+window.toggleSidebar    = toggleSidebar;
+window.toggleAttendance  = toggleAttendance;
+window.markAllPresent    = markAllPresent;
 window.updateDrill  = updateDrill;
 window.setPlayerFilter    = setPlayerFilter;
 window.renderPlayers      = renderPlayers;
