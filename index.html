@@ -244,7 +244,8 @@ html, body {
 .topbar-logo {
   font-family: var(--font-display);
   font-size: 22px;
-  letter-spacing: 3px;
+  letter-spacing: 2px;
+  line-height: 1;
   color: #ffffff;
 }
 .topbar-logo span { color: var(--orange-mid); }
@@ -303,9 +304,13 @@ html, body {
   font-family: var(--font-display);
   font-size: 14px;
   letter-spacing: .1em;
-  padding: 3px 10px;
+  padding: 4px 10px;
   border: 1px solid rgba(255,255,255,0.2);
   color: rgba(255,255,255,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 /* Firebase badge */
@@ -456,6 +461,9 @@ html, body {
 }
 .script-table { width: 100%; border-collapse: collapse; min-width: 900px; }
 .script-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   background: var(--royal-dark);
   font-family: var(--font-display);
   font-size: 11px;
@@ -793,6 +801,9 @@ html, body {
 .roster-table-wrap { overflow-x:auto; border:1px solid var(--rule2); background:var(--surface); }
 .roster-table { width:100%; border-collapse:collapse; min-width:600px; }
 .roster-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   background:var(--royal-dark); font-family:var(--font-display); font-size:11px;
   letter-spacing:.12em; color:rgba(255,255,255,0.75); padding:8px 10px; text-align:left;
   border-bottom:2px solid var(--orange); border-right:1px solid rgba(255,255,255,0.08); white-space:nowrap;
@@ -960,8 +971,8 @@ html, body {
   .topbar-day { display: none; }
   .presence-avatars { display: none; }
   #fbStatus { display: none !important; }
-  .role-badge { font-size: 14px; padding: 3px 9px; }
-  .switch-role-btn { font-size: 11px !important; padding: 3px 7px !important; letter-spacing: .02em !important; }
+  .role-badge { font-size: 12px; padding: 4px 7px; min-width: 0; }
+  .switch-role-btn { font-size: 12px !important; padding: 4px 7px !important; letter-spacing: .02em !important; }
   .topbar-logo { font-size: 17px; letter-spacing: 2px; }
 
   /* ── SIDEBAR — slide-over overlay on mobile ── */
@@ -1178,10 +1189,10 @@ html, body {
     <span class="topbar-logo">WCHS <span style="color:var(--orange-mid)">FOOTBALL</span></span>
     <span class="topbar-day" id="topbarDay">MONDAY</span>
     <span class="topbar-spacer"></span>
-    <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+    <div class="live-badge"><div class="live-dot"></div>LIVE SYNC</div>
     <div class="presence-avatars" id="presenceAvatars"></div>
     <span class="role-badge" id="roleBadge"></span>
-    <button class="switch-role-btn" onclick="window.doLogout()" style="padding:4px 10px;background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.45);font-family:var(--font-display);font-size:15px;letter-spacing:.06em;cursor:pointer;transition:all .12s" onmouseover="this.style.color='#fff';this.style.borderColor='rgba(255,255,255,0.5)'" onmouseout="this.style.color='rgba(255,255,255,0.45)';this.style.borderColor='rgba(255,255,255,0.2)'">&#8592; SWITCH ROLE</button>
+    <button class="switch-role-btn" onclick="window.doLogout()" style="padding:4px 10px;background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.45);font-family:var(--font-display);font-size:14px;letter-spacing:.06em;cursor:pointer;transition:all .12s;white-space:nowrap;" onmouseover="this.style.color='#fff';this.style.borderColor='rgba(255,255,255,0.5)'" onmouseout="this.style.color='rgba(255,255,255,0.45)';this.style.borderColor='rgba(255,255,255,0.2)'">SWITCH ROLE</button>
   </div>
   <div class="main">
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="window.toggleSidebar()"></div>
