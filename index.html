@@ -1649,6 +1649,12 @@ function doLogin(){
         if (currentView === 'script') render();
       }
     });
+    // HC always clears any stale practice clock on login
+    // Position coaches sync whatever the HC has started
+    if (currentRole === 'HC') {
+      remove(ref(db, 'playscript/practiceStart'));
+      remove(ref(db, 'playscript/practicePaused'));
+    }
     initRoster();
     initSidelineSync();
   }
@@ -2359,37 +2365,14 @@ function initSidelineSync() {
   if (!db) return;
   onValue(ref(db, 'playscript/practiceStart'), snap => {
     const val = snap.val();
-    if (val) {
-      const ageMs = Date.now() - Number(val);
-      const fourHours = 4 * 60 * 60 * 1000;
-
-      // Always clear values older than 4 hours
-      if (ageMs > fourHours) {
-        remove(ref(db, 'playscript/practiceStart'));
-        remove(ref(db, 'playscript/practicePaused'));
-        practiceStartTime = null;
-        practicePausedAt  = null;
-        practiceStartedThisSession = false;
-        if (sidelineInterval) { clearInterval(sidelineInterval); sidelineInterval = null; }
-        if (currentView === 'sideline') renderSideline(document.getElementById('mainContent'));
-        return;
+    if (val && Number(val) !== practiceStartTime) {
+      practiceStartTime = Number(val);
+      if (currentView === 'sideline') {
+        renderSideline(document.getElementById('mainContent'));
+      } else {
+        renderAndTickSideline();
       }
-
-      // Only sync if HC started practice in this session (prevents stale load on login)
-      // OR if this device is a position coach (not HC) and practice is clearly active
-      const isPositionCoach = currentRole !== 'HC';
-      if (practiceStartedThisSession || isPositionCoach) {
-        if (Number(val) !== practiceStartTime) {
-          practiceStartTime = Number(val);
-          if (currentView === 'sideline') {
-            renderSideline(document.getElementById('mainContent'));
-          } else {
-            renderAndTickSideline();
-          }
-        }
-      }
-      // If HC and hasn't started this session — ignore the stored value
-    } else {
+    } else if (!val) {
       practiceStartTime = null;
       practiceStartedThisSession = false;
       if (sidelineInterval) { clearInterval(sidelineInterval); sidelineInterval = null; }
