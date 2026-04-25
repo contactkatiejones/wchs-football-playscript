@@ -1322,17 +1322,17 @@ canvas#wbCanvas {
       <div class="sidebar-item active" onclick="window.setView('script')" id="nav-script">
         Practice Script
       </div>
-      <div class="sidebar-item" onclick="window.setView('mygroup')" id="nav-mygroup">
-        My Group
-      </div>
-      <div class="sidebar-item" onclick="window.setView('players')" id="nav-players">
-        Roster
-      </div>
-      <div class="sidebar-item" onclick="window.setView('schedule_player')" id="nav-schedule-player">
-        My Schedule
-      </div>
       <div class="sidebar-item" onclick="window.setView('sideline')" id="nav-sideline">
         Sideline
+      </div>
+      <div class="sidebar-item" onclick="window.setView('mygroup')" id="nav-mygroup">
+        <span id="mygroupLabel">My Group</span>
+      </div>
+      <div class="sidebar-item" onclick="window.setView('players')" id="nav-players">
+        Full Roster
+      </div>
+      <div class="sidebar-item" onclick="window.setView('schedule_player')" id="nav-schedule-player">
+        Depth Chart
       </div>
       <div class="sidebar-item" onclick="window.setView('whiteboard')" id="nav-whiteboard">
         Whiteboard
@@ -1487,20 +1487,21 @@ const ROLES = [
   {id:'ST', label:'ST Coach',   desc:'ST / K/P groups',  color:'#80a8e8'},
 ];
 
+const POS_FULL_NAME = {'QB':'Quarterback','RB':'Running Back','WR':'Wide Receiver','TE':'Tight End','OL':'Offensive Line','DL':'Defensive Line','LB':'Linebacker','DB':'Defensive Back','K/P':'Kicker / Punter','ST':'Special Teams','HC':'Head Coach'};
 const POS_LIST = ['QB','RB','WR','TE','OL','DL','LB','DB','K/P','ST'];
 const POS_COLOR = {QB:'var(--qb)',RB:'var(--rb)',WR:'var(--wr)',TE:'var(--te)',OL:'var(--ol)',DL:'var(--dl)',LB:'var(--lb)',DB:'var(--db)','K/P':'var(--kp)',ST:'var(--st)'};
 const POS_BG    = {QB:'var(--qb-bg)',RB:'var(--rb-bg)',WR:'var(--wr-bg)',TE:'var(--te-bg)',OL:'var(--ol-bg)',DL:'var(--dl-bg)',LB:'var(--lb-bg)',DB:'var(--db-bg)','K/P':'var(--kp-bg)',ST:'var(--st-bg)'};
 
 let SCHEDULE = [
-  {start:'3:30',end:'3:40',period:'Stretch / warmup',       type:'tempo'},
-  {start:'3:40',end:'3:47',period:'Indy — fundamentals',    type:'indy'},
-  {start:'3:47',end:'3:54',period:'Indy — weak focus',      type:'indy'},
-  {start:'3:54',end:'4:04',period:'Combo groups',           type:'combo'},
-  {start:'4:04',end:'4:16',period:'7-on-7 / 9-on-7',        type:'combo'},
-  {start:'4:16',end:'4:28',period:'Team offense',           type:'team'},
-  {start:'4:28',end:'4:40',period:'Team defense',           type:'team'},
-  {start:'4:40',end:'4:48',period:'Special teams',          type:'team'},
-  {start:'4:48',end:'5:00',period:'Conditioning',           type:'tempo'},
+  {start:'3:30',end:'3:40',period:'Stretch / warmup',       type:'tempo',unit:'all'},
+  {start:'3:40',end:'3:47',period:'Indy — fundamentals',    type:'indy',unit:'all'},
+  {start:'3:47',end:'3:54',period:'Indy — weak focus',      type:'indy',unit:'all'},
+  {start:'3:54',end:'4:04',period:'Combo groups',           type:'combo',unit:'all'},
+  {start:'4:04',end:'4:16',period:'7-on-7 / 9-on-7',        type:'combo',unit:'all'},
+  {start:'4:16',end:'4:28',period:'Team offense',           type:'team',unit:'all'},
+  {start:'4:28',end:'4:40',period:'Team defense',           type:'team',unit:'all'},
+  {start:'4:40',end:'4:48',period:'Special teams',          type:'team',unit:'all'},
+  {start:'4:48',end:'5:00',period:'Conditioning',           type:'tempo',unit:'all'},
 ];
 
 const DRILLS_BY_DAY = {
@@ -1713,6 +1714,8 @@ function doLogout(){
   if (sn) sn.outerHTML = '<div id="nav-schedule-placeholder"></div>';
   document.getElementById('app').classList.remove('visible');
   document.getElementById('login-screen').style.display='flex';
+  const mgLabel2 = document.getElementById('mygroupLabel');
+  if (mgLabel2) mgLabel2.textContent = 'My Group';
   document.querySelectorAll('.role-card, .role-card-hc').forEach(c=>c.classList.remove('selected'));
   document.getElementById('loginBtn').classList.remove('active');
 }
@@ -1796,10 +1799,12 @@ function doLogin(){
       initRoster();
       initSidelineSync();
       initAttendanceSync();
+      initPeriodOffsetSync();
     } else {
       initRoster();
       initSidelineSync();
       initAttendanceSync();
+      initPeriodOffsetSync();
     }
   }
 
@@ -1812,6 +1817,12 @@ function doLogin(){
     const sp = document.getElementById('nav-schedule-placeholder');
     if (rp) rp.outerHTML = '<div class="sidebar-item" onclick="window.setView(\'roster\')" id="nav-roster">Edit Roster</div>';
     if (sp) sp.outerHTML = '<div class="sidebar-item" onclick="window.setView(\'schedule\')" id="nav-schedule">Edit Schedule</div>';
+  }
+  // Update My Group sidebar label to reflect coach role
+  const mgLabel = document.getElementById('mygroupLabel');
+  if (mgLabel) {
+    const mgPos = currentRole === 'HC' ? 'QB' : currentRole;
+    mgLabel.textContent = (POS_FULL_NAME[mgPos]||mgPos) + ' Unit';
   }
   setView('script');
   if (!FIREBASE_READY) startPeerActivity();
@@ -1959,6 +1970,21 @@ function dayLabel(day) {
   return '<span style="color:var(--orange);font-weight:700;font-family:var(--font-body)">' + name + '</span>';
 }
 
+
+function unitPill(unit) {
+  const styles = {
+    '1st':   'background:#1a3fa8;color:#fff',
+    '2nd':   'background:#4a6abf;color:#fff',
+    '3rd':   'background:#7a8fbf;color:#fff',
+    'scout': 'background:#555;color:#fff',
+    'all':   'background:#e8e8e8;color:#333',
+  };
+  const labels = {'1st':'1ST','2nd':'2ND','3rd':'3RD','scout':'SCOUT','all':'ALL'};
+  const style = styles[unit] || styles.all;
+  const label = labels[unit] || unit.toUpperCase();
+  return '<span style="display:inline-block;padding:2px 8px;font-family:var(--font-display);font-size:10px;letter-spacing:.06em;' + style + '">' + label + '</span>';
+}
+
 function pill(type){
   const map={indy:'INDY',combo:'COMBO',team:'TEAM',tempo:'WARMUP'};
   return `<span class="period-pill pill-${type}">${map[type]||type.toUpperCase()}</span>`;
@@ -1999,13 +2025,14 @@ function renderScript(el){
       <td class="time-cell">${row.start}</td>
       <td>${pill(row.type)}</td>
       <td style="font-size:11px;color:var(--ink2);white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis">${row.period}${hasComment?` <span class="comment-badge" onclick="alert('DB Coach: Need extra time on hip flip this week')">2 notes</span>`:''}</td>
+      <td>${unitPill(row.unit||'all')}</td>
       ${cells}
     </tr>`;
   }).join('');
 
   const table=`<div class="script-wrap">
     <table class="script-table">
-      <tr><th style="color:#fff">Start</th><th style="color:#fff">Type</th><th style="min-width:120px;color:#fff">Period</th>${posHeaders}<th></th></tr>
+      <tr><th style="color:#fff">Start</th><th style="color:#fff">Type</th><th style="min-width:120px;color:#fff">Period</th><th style="color:#fff;width:70px">Unit</th>${posHeaders}<th></th></tr>
       ${rows}
     </table>
   </div>`;
@@ -2101,18 +2128,27 @@ function renderMyGroup(el){
   // Include players who are routed to this group for any period type
   // A player is "in my group" if their primary pos matches OR if any period routing sends them here
   const myPlayers=PLAYERS.filter(p=>{
-    if (!isPresent(p.id)) return false;
     if (p.pos===pos || p.primaryPos===pos) return true;
-    // Check if any routing sends this player to my group
     const r = p.routing||{};
     return Object.values(r).includes(pos);
   });
   const day=currentDay;
   const d=DRILLS_BY_DAY[day]&&DRILLS_BY_DAY[day][pos];
 
-  const cards=myPlayers.map(p=>{
+  // Sort by depth chart rank
+  const DEPTH_LABELS_MG = {1:'1ST TEAM',2:'2ND TEAM',3:'3RD TEAM',0:'SCOUT TEAM'};
+  const getDepth = p => (p.depth&&p.depth[pos]!==undefined) ? p.depth[pos] : 1;
+  myPlayers.sort((a,b) => getDepth(a) - getDepth(b));
+
+  // Group by depth
+  const grouped = {1:[],2:[],3:[],0:[]};
+  myPlayers.forEach(p => grouped[getDepth(p)].push(p));
+
+  const cards = Object.entries(grouped).filter(([,arr])=>arr.length>0).map(([unit, players]) => {
+    const unitLabel = DEPTH_LABELS_MG[unit] || unit;
+    const unitColor = unit=='1' ? 'var(--royal-dark)' : unit=='0' ? '#555' : 'var(--ink2)';
+    const playerCards = players.map(p => {
     const weakHtml=(p.weak||[]).length?p.weak.map(w=>`<span class="weak-tag">${w}</span>`).join(''):`<span class="no-weak">no weak areas flagged</span>`;
-    // Show routing info for multi-position players
     const hasRouting = (p.secondaryPos||[]).length > 0;
     const routingHtml = hasRouting ? (() => {
       const r = p.routing||{};
@@ -2125,16 +2161,21 @@ function renderMyGroup(el){
       }).join('');
       return `<div style="margin-top:5px">${rows}</div>`;
     })() : '';
-    return `<div class="player-card">
+    return `<div class="player-card" style="${unit==0?'opacity:0.7':''}">
       <div class="pc-header">
         <span class="pc-num">#${p.num}</span>
         <span class="pc-name">${p.name}</span>
-        <span class="pc-pos" style="background:${POS_BG[p.pos]};color:${POS_COLOR[p.pos]}">${p.pos}</span>
+        <span id="att_${p.id}">${attendanceBtn(p.id)}</span>
       </div>
       <div class="pc-weak">${weakHtml}</div>
       ${routingHtml}
       ${d?`<div class="pc-drill">${SCHEDULE[1].start} — ${d[0]}</div>`:''}
       ${d&&(p.weak||[]).length?`<div class="pc-drill focus">${SCHEDULE[2].start} — ${d[1]||d[0]} <span style="color:var(--orange);font-size:9px">(focus)</span></div>`:''}
+    </div>`;
+    }).join('');
+    return `<div style="margin-bottom:14px">
+      <div style="font-family:var(--font-display);font-size:11px;letter-spacing:.14em;color:${unitColor};padding:4px 0;border-bottom:2px solid ${unitColor};margin-bottom:8px">${unitLabel}</div>
+      <div class="player-grid">${playerCards}</div>
     </div>`;
   }).join('');
 
@@ -2148,11 +2189,11 @@ function renderMyGroup(el){
 
   el.innerHTML=`
     <div class="content-header">
-      <span class="content-title">MY GROUP — ${pos}</span>
+      <span class="content-title">${(POS_FULL_NAME[pos]||pos).toUpperCase()} UNIT</span>
       <span class="content-meta">${myPlayers.length} PLAYERS</span>
     </div>
     ${myDrills}
-    <div class="player-grid">${cards}</div>`;
+    <div>${cards}</div>`;
 }
 
 // ── PLAYERS VIEW ───────────────────────────────────────────────────────────
@@ -2189,7 +2230,7 @@ function renderPlayers(el){
 
   el.innerHTML=`
     <div class="content-header">
-      <span class="content-title">ROSTER</span>
+      <span class="content-title">FULL ROSTER</span>
       <span class="content-meta" id="attendanceMeta">${presentCount} OF ${PLAYERS.length} PRESENT</span>
     </div>
     <div class="filter-bar">${btns}</div>
@@ -2220,23 +2261,27 @@ function calcCurrentPeriod(startMs, nowMs) {
   const elapsedSecs = Math.floor(((nowMs || Date.now()) - Number(startMs)) / 1000);
   if (elapsedSecs < 0) return null;
 
-  // Build cumulative seconds for each period based on schedule durations
+  // Build cumulative seconds, applying any per-period offsets
+  // periodOffsets[i] > 0 = extra time added, < 0 = time removed (skip)
   let cursor = 0;
   for (let i = 0; i < SCHEDULE.length; i++) {
     const row = SCHEDULE[i];
-    const dur = Math.max(0, (timeStrToMins(row.end) - timeStrToMins(row.start)) * 60);
-    if (dur <= 0) continue; // skip invalid periods
+    let dur = Math.max(0, (timeStrToMins(row.end) - timeStrToMins(row.start)) * 60);
+    // Apply offset: negative offset skips forward, positive adds time
+    const offset = (periodOffsets[i] || 0) / 1000; // convert ms to secs
+    dur = Math.max(0, dur + offset);
+    if (dur <= 0) { cursor += 0; continue; } // period fully skipped
     if (elapsedSecs < cursor + dur) {
       return {
         periodIdx: i,
-        secsLeft: cursor + dur - elapsedSecs,
-        secsDone: elapsedSecs - cursor,
+        secsLeft:  Math.ceil(cursor + dur - elapsedSecs),
+        secsDone:  elapsedSecs - cursor,
         totalSecs: dur
       };
     }
     cursor += dur;
   }
-  return { periodIdx: -1, secsLeft: 0, secsDone: 0, totalSecs: 0 }; // practice over
+  return { periodIdx: -1, secsLeft: 0, secsDone: 0, totalSecs: 0 };
 }
 
 function fmtTime(secs) {
@@ -2247,6 +2292,7 @@ function fmtTime(secs) {
 
 let practiceStartTime = null; // ms epoch when practice started (adjusted for pauses)
 let practicePausedAt  = null; // ms epoch when practice was paused, null if running
+let periodOffsets     = {};   // {periodIdx: offsetMs} — adjustments applied to specific periods
 
 function startPractice() {
   practiceStartTime = Date.now();
@@ -2289,6 +2335,7 @@ function resetPractice() {
   practiceStartedThisSession = false;
   lastNotifPeriodIdx = -1;
   warned15 = false;
+  resetPeriodOffsets();
   dismissNotif();
   if (db) {
     remove(ref(db, 'playscript/practiceStart'));
@@ -2307,14 +2354,48 @@ function renderSidelineControls() {
   const isPaused   = !!practicePausedAt;
   const isRunning  = practiceStartTime && !practicePausedAt;
 
-  el.innerHTML = notStarted
-    ? '<button onclick="window.startPractice()" style="padding:8px 18px;background:#2e8b2e;color:#fff;border:none;font-family:var(--font-display);font-size:15px;letter-spacing:.08em;cursor:pointer;border-radius:2px">▶ START PRACTICE</button>'
-    : (isRunning
-      ? '<button onclick="window.pausePractice()" style="padding:8px 18px;background:var(--orange);color:#fff;border:none;font-family:var(--font-display);font-size:15px;letter-spacing:.08em;cursor:pointer;border-radius:2px;margin-right:8px">⏸ PAUSE</button>'
-        + '<button onclick="window.resetPractice()" style="padding:8px 14px;background:transparent;color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.2);font-family:var(--font-display);font-size:13px;letter-spacing:.06em;cursor:pointer">RESET</button>'
-      : '<button onclick="window.resumePractice()" style="padding:8px 18px;background:#2e8b2e;color:#fff;border:none;font-family:var(--font-display);font-size:15px;letter-spacing:.08em;cursor:pointer;border-radius:2px;margin-right:8px">▶ RESUME</button>'
-        + '<button onclick="window.resetPractice()" style="padding:8px 14px;background:transparent;color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.2);font-family:var(--font-display);font-size:13px;letter-spacing:.06em;cursor:pointer">RESET</button>'
-      );
+  const btnStyle   = 'padding:7px 13px;border:none;font-family:var(--font-display);font-size:13px;letter-spacing:.06em;cursor:pointer;border-radius:2px;margin-left:5px';
+  const dimStyle   = 'padding:7px 10px;background:transparent;color:rgba(255,255,255,0.45);border:1px solid rgba(255,255,255,0.2);font-family:var(--font-display);font-size:12px;letter-spacing:.06em;cursor:pointer;border-radius:2px;margin-left:5px';
+
+  if (notStarted) {
+    el.innerHTML = '<button onclick="window.startPractice()" style="' + btnStyle + ';background:#2e8b2e;color:#fff;font-size:15px">▶ START PRACTICE</button>';
+    return;
+  }
+
+  const mainBtn = isRunning
+    ? '<button onclick="window.pausePractice()"  style="' + btnStyle + ';background:var(--orange);color:#fff">⏸ PAUSE</button>'
+    : '<button onclick="window.resumePractice()" style="' + btnStyle + ';background:#2e8b2e;color:#fff">▶ RESUME</button>';
+
+  el.innerHTML =
+    mainBtn +
+    (isRunning ? '<button onclick="window.skipPeriod()" style="' + btnStyle + ';background:#1a3fa8;color:#fff" title="Skip to next period">⏭ SKIP</button>' : '') +
+    (isRunning ? '<button onclick="window.addTimeToPeriod(2)" style="' + dimStyle + '" title="Add 2 minutes">+2m</button>' : '') +
+    (isRunning ? '<button onclick="window.addTimeToPeriod(5)" style="' + dimStyle + '" title="Add 5 minutes">+5m</button>' : '') +
+    '<button onclick="window.resetPractice()" style="' + dimStyle + '">RESET</button>';
+}
+
+// Renders a period overview strip showing all periods with status dots
+function renderPeriodStrip() {
+  if (!practiceStartTime) return '';
+  const status = practicePausedAt
+    ? calcCurrentPeriod(practiceStartTime, practicePausedAt)
+    : calcCurrentPeriod(practiceStartTime);
+  const currentIdx = status ? status.periodIdx : -1;
+
+  return '<div style="display:flex;gap:4px;flex-wrap:wrap;padding:10px 0 6px">' +
+    SCHEDULE.map((row, i) => {
+      const isDone    = currentIdx > i || currentIdx === -1;
+      const isCurrent = currentIdx === i;
+      const bg = isCurrent ? 'var(--orange)' : isDone ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)';
+      const color = isCurrent ? '#fff' : isDone ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.55)';
+      const border = isCurrent ? '2px solid var(--orange)' : '1px solid rgba(255,255,255,0.1)';
+      const typeColors = {indy:'#4f82f7',combo:'#e85c00',team:'#2e8b2e',tempo:'#888'};
+      const dot = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:' + (typeColors[row.type]||'#888') + ';margin-right:4px;vertical-align:middle"></span>';
+      return '<div style="padding:3px 8px;background:' + bg + ';color:' + color + ';border:' + border + ';font-family:var(--font-display);font-size:10px;letter-spacing:.04em;white-space:nowrap;' + (isDone&&!isCurrent?'text-decoration:line-through':'') + '">' +
+        dot + row.period.split(' ')[0] +
+      '</div>';
+    }).join('') +
+  '</div>';
 }
 
 // ── NOTIFICATION SYSTEM ────────────────────────────────────────────────────
@@ -2416,7 +2497,55 @@ function checkNotifications(displayStatus) {
 
 window.dismissNotif = dismissNotif;
 
-function renderAndTickSideline() {
+// ── DYNAMIC PERIOD MANAGEMENT ─────────────────────────────────────────────
+function applyPeriodOffset(periodIdx, offsetMs) {
+  periodOffsets[periodIdx] = (periodOffsets[periodIdx] || 0) + offsetMs;
+  // Sync to Firebase
+  if (db) set(ref(db, 'playscript/periodOffsets'), periodOffsets);
+  // Refresh sideline immediately
+  lastNotifPeriodIdx = -1;
+  warned15 = false;
+  if (currentView === 'sideline') tickSideline();
+}
+
+function skipPeriod() {
+  if (!practiceStartTime) return;
+  const status = calcCurrentPeriod(practiceStartTime);
+  if (!status || status.periodIdx < 0) return;
+  const secsLeft = status.secsLeft;
+  // Subtract remaining time from this period so it ends now
+  applyPeriodOffset(status.periodIdx, -secsLeft * 1000);
+  showBanner('new-period', '▶', 'PERIOD SKIPPED', 'Advanced to next period', 3);
+}
+
+function addTimeToPeriod(mins) {
+  if (!practiceStartTime) return;
+  const status = calcCurrentPeriod(practiceStartTime);
+  if (!status || status.periodIdx < 0) return;
+  applyPeriodOffset(status.periodIdx, mins * 60 * 1000);
+  showBanner('new-period', '+', mins + ' MIN ADDED', SCHEDULE[status.periodIdx].period, 3);
+}
+
+function initPeriodOffsetSync() {
+  if (!db) return;
+  onValue(ref(db, 'playscript/periodOffsets'), snap => {
+    const val = snap.val();
+    periodOffsets = val ? {...val} : {};
+    // Re-key as numbers since Firebase stringifies keys
+    const numeric = {};
+    Object.entries(periodOffsets).forEach(([k,v]) => { numeric[Number(k)] = v; });
+    periodOffsets = numeric;
+    if (currentView === 'sideline') tickSideline();
+  });
+}
+
+function resetPeriodOffsets() {
+  periodOffsets = {};
+  if (db) remove(ref(db, 'playscript/periodOffsets'));
+}
+
+window.skipPeriod      = skipPeriod;
+window.addTimeToPeriod = addTimeToPeriod;
   if (sidelineInterval) clearInterval(sidelineInterval);
   sidelineInterval = setInterval(() => {
     // Always check for notifications even if not on sideline view
@@ -2467,6 +2596,10 @@ function tickSideline() {
 
   // Check if we need to fire a notification
   checkNotifications(displayStatus);
+
+  // Update period overview strip
+  const stripEl = document.getElementById('periodStrip');
+  if (stripEl) stripEl.innerHTML = renderPeriodStrip();
 
   // Progress bar
   const pct = Math.round((displayStatus.secsDone / displayStatus.totalSecs) * 100);
@@ -2530,6 +2663,7 @@ function renderSideline(el) {
     '</div>' +
 
     '<div style="text-align:center;padding:8px 0;font-size:13px;color:#000;font-family:var(--font-mono)">Clock updates in real time · synced across all coaches</div>' +
+    '<div id="periodStrip">' + renderPeriodStrip() + '</div>' +
     '</div>';
 
   if (practiceStartTime) renderAndTickSideline();
@@ -2665,6 +2799,7 @@ function openPlayerModal(playerId) {
           '<div class="pos-selector" id="posSecondary">' + posButtons('secondary') + '</div>' +
         '</div>' +
         buildRoutingSection(existing) +
+        buildDepthSection(existing, primaryPos, secondaryPos) +
         '<div class="modal-section" id="skillsSection">' +
           '<label class="field-label">Weak areas <span class="field-hint">tap to flag — shows red on coach cards</span></label>' +
           '<div class="skills-grid" id="skillsGrid">' + renderSkillBtns(primaryPos, secondaryPos, weakSkills) + '</div>' +
@@ -2704,6 +2839,29 @@ function playerInGroup(player, groupPos, periodType) {
 }
 
 // Build routing dropdowns HTML for a player
+
+function buildDepthSection(existing, primaryPos, secondaryPos) {
+  const allPos = [primaryPos, ...(secondaryPos||[])].filter(Boolean);
+  if (!allPos.length) return '';
+  const depth = (existing && existing.depth) || {};
+  const DEPTH_LABELS = {1:'1st Team',2:'2nd Team',3:'3rd Team',0:'Scout Team'};
+  const rows = allPos.map(pos => {
+    const cur = depth[pos] !== undefined ? depth[pos] : 1;
+    const opts = [1,2,3,0].map(v =>
+      '<option value="' + v + '"' + (cur===v?' selected':'') + '>' + DEPTH_LABELS[v] + '</option>'
+    ).join('');
+    return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">' +
+      '<span style="font-family:var(--font-display);font-size:13px;letter-spacing:.06em;color:#000;min-width:50px">' + pos + '</span>' +
+      '<select class="type-select" id="depth_' + pos + '" style="min-width:120px">' + opts + '</select>' +
+    '</div>';
+  }).join('');
+
+  return '<div class="modal-section">' +
+    '<label class="field-label">Depth chart <span class="field-hint">unit assignment per position</span></label>' +
+    rows +
+  '</div>';
+}
+
 function buildRoutingSection(existing) {
   const allPos = POS_LIST;
   const hasSecondary = existing && (existing.secondaryPos||[]).length > 0;
@@ -2790,6 +2948,15 @@ window.savePlayerFromModal = function() {
   if (!pos)  { alert('Please select a primary position.'); return; }
 
   const id = editingPlayerId || ('p_' + Date.now());
+  // Build depth chart from modal
+  const depth = {};
+  const allModalPos = [pos, ...(modal._secondaryPos||[])].filter(Boolean);
+  allModalPos.forEach(p => {
+    const sel = document.getElementById('depth_' + p);
+    if (sel) depth[p] = parseInt(sel.value);
+    else depth[p] = 1;
+  });
+
   // Build routing from modal dropdowns
   const routing = {};
   ['tempo','indy','combo','team'].forEach(t => {
@@ -2802,6 +2969,7 @@ window.savePlayerFromModal = function() {
     id, name, num, pos,
     primaryPos: pos,
     secondaryPos: modal._secondaryPos,
+    depth,
     routing,
     weak: modal._weakSkills,
     good: getSkillsForPos([pos, ...modal._secondaryPos]).filter(s => !modal._weakSkills.includes(s))
@@ -2907,7 +3075,7 @@ function scheduleChanged() {
 
 function addPeriod() {
   const last = SCHEDULE[SCHEDULE.length-1];
-  SCHEDULE.push({start:last?last.end:'5:00', end:'5:10', period:'New period', type:'tempo'});
+  SCHEDULE.push({start:last?last.end:'5:00', end:'5:10', period:'New period', type:'tempo',unit:'all'});
   renderScheduleEditor(document.getElementById('mainContent'));
 }
 
@@ -2943,6 +3111,27 @@ function saveSchedule() {
     const note = bar.querySelector('.sched-note');
     if (note) { note.textContent = 'Saved! Script view updated.'; setTimeout(()=>note.textContent='Changes are applied to the practice script in real time.',2000); }
   }
+}
+
+
+function unitSelect(i, currentUnit) {
+  const opts = ['all','1st','2nd','3rd','scout'].map(u =>
+    '<option value="' + u + '"' + (currentUnit===u?' selected':'') + '>' +
+    {all:'ALL','1st':'1ST TEAM','2nd':'2ND TEAM','3rd':'3RD TEAM',scout:'SCOUT'}[u] + '</option>'
+  ).join('');
+  return '<select class="type-select" onchange="window.updatePeriodField(' + i + ',\'unit\',this.value)">' + opts + '</select>';
+}
+
+const TYPE_LABELS = {indy:'INDY',combo:'COMBO',team:'TEAM',tempo:'WARMUP'};
+const TYPE_OPTS   = ['tempo','indy','combo','team'];
+
+function calcDuration(start, end) {
+  function toMins(t) {
+    const [h,m] = t.split(':').map(Number);
+    return h*60 + m;
+  }
+  const diff = toMins(end) - toMins(start);
+  return diff > 0 ? diff + ' min' : '—';
 }
 
 function renderScheduleEditor(el) {
@@ -2989,7 +3178,7 @@ function renderScheduleEditor(el) {
         '<thead><tr>' +
           '<th style="width:28px"></th>' +
           '<th>Start</th><th>End</th><th>Duration</th>' +
-          '<th>Period name</th><th>Type</th><th style="width:50px"></th>' +
+          '<th>Period name</th><th>Type</th><th>Unit</th><th style="width:50px"></th>' +
         '</tr></thead>' +
         '<tbody>' + rows + '</tbody>' +
       '</table>' +
@@ -3402,7 +3591,7 @@ function renderMySchedule(el) {
 
   el.innerHTML =
     '<div class="content-header">' +
-      '<span class="content-title">MY SCHEDULE</span>' +
+      '<span class="content-title">DEPTH CHART</span>' +
       '<span class="content-meta">' + myPos + ' · ' + myPlayers.length + ' MULTI-POSITION</span>' +
     '</div>' +
     '<div style="font-size:12px;color:#000;font-family:var(--font-body);margin-bottom:10px">' +
@@ -3770,7 +3959,7 @@ function renderUserGuide(el) {
         <p><strong>Views:</strong></p>
         <ul style="margin:6px 0 6px 20px;display:flex;flex-direction:column;gap:5px">
           <li><strong>Practice Script</strong> — the full weekly script grid, all positions and all periods</li>
-          <li><strong>My Group</strong> — what each position coach sees for their players on the current day</li>
+          <li><strong>Position Unit</strong> — your players for the current day (e.g. DB Unit for the DB coach)</li>
           <li><strong>Roster</strong> — the full player list, filterable by position</li>
           <li><strong>Sideline</strong> — the live practice clock</li>
           <li><strong>Edit Roster</strong> — add, edit, and remove players <em>(Head Coach only)</em></li>
