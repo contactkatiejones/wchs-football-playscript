@@ -968,7 +968,8 @@ html, body {
 
   /* ── TOPBAR ── */
   .topbar { padding: 0 10px; gap: 8px; height: 48px; }
-  .topbar-day { display: none; }
+  .topbar-day { display: flex; align-items: center; font-size: 12px; padding: 2px 7px; letter-spacing: .06em; order: 1; }
+  .live-badge { order: 2; font-size: 9px; }
   .presence-avatars { display: none; }
   #fbStatus { display: none !important; }
   .role-badge { font-size: 12px; padding: 4px 7px; min-width: 0; }
@@ -1826,7 +1827,7 @@ function renderScript(el){
   el.innerHTML=`
     <div class="content-header">
       <span class="content-title">PRACTICE SCRIPT</span>
-      <span class="content-meta">${dayLabel(currentDay)} · 3:30–5:00 PM</span>
+      <span class="content-meta">3:30–5:00 PM</span>
       <div style="flex:1"></div>
       <button class="export-btn" onclick="window.doPrint()">PRINT / SAVE PDF</button>
     </div>
@@ -1895,7 +1896,7 @@ function renderMyGroup(el){
   el.innerHTML=`
     <div class="content-header">
       <span class="content-title">MY GROUP — ${pos}</span>
-      <span class="content-meta">${myPlayers.length} PLAYERS · ${dayLabel(currentDay)}</span>
+      <span class="content-meta">${myPlayers.length} PLAYERS</span>
     </div>
     ${myDrills}
     <div class="player-grid">${cards}</div>`;
@@ -2241,7 +2242,7 @@ function renderSideline(el) {
   el.innerHTML =
     '<div class="content-header">' +
       '<span class="content-title">SIDELINE</span>' +
-      '<span class="content-meta">' + pos + ' COACH · ' + dayLabel(currentDay) + '</span>' +
+      '<span class="content-meta">' + pos + ' COACH</span>' +
       '<div style="flex:1"></div>' +
       (isHC ? '<div id="sidelineControls"></div>' : '') +
     '</div>' +
