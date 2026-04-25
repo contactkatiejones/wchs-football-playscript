@@ -1649,16 +1649,18 @@ function doLogin(){
         if (currentView === 'script') render();
       }
     });
-    // HC always clears stale practice clock on login, THEN starts sync
-    // Using Promise.all ensures the removes complete before onValue subscribes
+    // HC clears stale practice data and starts sync
+    // Position coaches sync from Firebase immediately
     if (currentRole === 'HC') {
-      Promise.all([
-        remove(ref(db, 'playscript/practiceStart')),
-        remove(ref(db, 'playscript/practicePaused'))
-      ]).then(() => {
-        initRoster();
-        initSidelineSync();
-      });
+      // Clear local state unconditionally
+      practiceStartTime = null;
+      practicePausedAt = null;
+      practiceStartedThisSession = false;
+      // Best-effort clear on Firebase (async, may lose race with onValue)
+      remove(ref(db, 'playscript/practiceStart'));
+      remove(ref(db, 'playscript/practicePaused'));
+      initRoster();
+      initSidelineSync();
     } else {
       initRoster();
       initSidelineSync();
@@ -2371,14 +2373,21 @@ function initSidelineSync() {
   if (!db) return;
   onValue(ref(db, 'playscript/practiceStart'), snap => {
     const val = snap.val();
-    if (val && Number(val) !== practiceStartTime) {
-      practiceStartTime = Number(val);
-      if (currentView === 'sideline') {
-        renderSideline(document.getElementById('mainContent'));
-      } else {
-        renderAndTickSideline();
+    if (val) {
+      // HC: only accept values written by THIS session (practiceStartedThisSession)
+      // This prevents the local Firebase cache from loading stale values
+      if (currentRole === 'HC' && !practiceStartedThisSession) {
+        return; // ignore — HC hasn't started practice yet this session
       }
-    } else if (!val) {
+      if (Number(val) !== practiceStartTime) {
+        practiceStartTime = Number(val);
+        if (currentView === 'sideline') {
+          renderSideline(document.getElementById('mainContent'));
+        } else {
+          renderAndTickSideline();
+        }
+      }
+    } else {
       practiceStartTime = null;
       practiceStartedThisSession = false;
       if (sidelineInterval) { clearInterval(sidelineInterval); sidelineInterval = null; }
@@ -2387,6 +2396,7 @@ function initSidelineSync() {
   });
   onValue(ref(db, 'playscript/practicePaused'), snap => {
     const val = snap.val();
+    if (currentRole === 'HC' && !practiceStartedThisSession) return;
     practicePausedAt = val ? Number(val) : null;
     if (currentView === 'sideline') renderSidelineControls();
   });
